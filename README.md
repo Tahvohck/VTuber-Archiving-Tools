@@ -1,4 +1,4 @@
-Set of tools to archive vtubers. Requires FFMPEG and YOUTUBE-DL
+Set of tools to archive vtubers. Requires FFMPEG and YOUTUBE-DL. If the webp tool DWEBP is on your PATH, can also convert webp images into PNG when extracting songs.
 
 # livestream-archive.ps1
 
