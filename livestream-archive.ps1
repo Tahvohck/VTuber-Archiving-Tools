@@ -37,6 +37,8 @@ if (!$ConfigFileInfo.Exists){
 	return
 }
 
+####################
+# wait loop
 if ($LiveOn) {
 	Write-host "Starts on: $LiveOn (DateTime)"
 } else {
@@ -61,6 +63,8 @@ while ($true) {
 	}
 }
 
+####################
+# Download loop
 Do {
 	& $ytdl --config-location "$ConfigFileInfo" `
 		"$URL"
