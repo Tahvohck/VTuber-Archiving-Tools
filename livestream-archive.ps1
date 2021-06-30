@@ -19,7 +19,13 @@ Push-Location $BootPath
 $waitingtime = $LiveOn - [DateTime]::Now
 $fstring = "dd\ \d\a\y\s\ hh\:mm\:ss"
 
-$ytdl = gcm youtube-dl
+####################
+# Prechecks
+$ytdl = gcm yt-dlp -ea SilentlyContinue
+if ($ytdl -eq $null) {
+	Write-Host -Fore Cyan "Could not find YT-DLP, falling back to YT-DL"
+	$ytdl = gcm youtube-dl -ea SilentlyContinue
+}
 if ($ytdl -eq $null) {
 	Write-Host -Fore Red "YT-DL could not be found! Make sure it's on the PATH"
 	return
