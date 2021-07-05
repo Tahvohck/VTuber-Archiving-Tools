@@ -45,24 +45,20 @@ if ($LiveOn) {
 } else {
 	$LiveOn = [Datetime]::Today
 	$LiveOn = $LiveOn.AddHours([DateTime]::Now.Hour).AddMinutes([DateTime]::now.Minute)
-	$LiveOn = $LiveOn.Add($StartsIn)
+	$LiveOn = $LiveOn.Add([TimeSpan]$StartsIn)
 	Write-host "Starts on: $LiveOn (Timespan)"
 }
 Write-Host "Lead Time: $LeadTime minutes"
 Write-Host "URL: $URL"
 Write-Host "Config: $ConfigFileInfo"
 
-while ($true) {
+Do {
 	$remainingtime = $LiveOn - [datetime]::now
-	if ($remainingtime.TotalSeconds -gt ($LeadTime * 60)) {
-		Write-Progress `
-			-Activity "Waiting for stream to start" `
-			-Status $remainingtime.ToString($fstring) 
-		sleep 1
-	} else {
-		break
-	}
-}
+	Write-Progress `
+		-Activity "Waiting for stream to start" `
+		-Status $remainingtime.ToString($fstring)
+	sleep 1
+} while ($remainingtime.TotalSeconds -gt ($LeadTime * 60))
 
 ####################
 # Download loop
