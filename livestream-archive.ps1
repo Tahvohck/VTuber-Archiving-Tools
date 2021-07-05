@@ -41,13 +41,15 @@ if (!$ConfigFileInfo.Exists){
 ####################
 # wait loop
 if ($LiveOn) {
-	Write-host "Starts on: $LiveOn (DateTime)"
+	$Mode = "DateTime"
 } else {
 	$LiveOn = [Datetime]::Today
 	$LiveOn = $LiveOn.AddHours([DateTime]::Now.Hour).AddMinutes([DateTime]::now.Minute)
 	$LiveOn = $LiveOn.Add([TimeSpan]$StartsIn)
-	Write-host "Starts on: $LiveOn (Timespan)"
+	$Mode = "TimeSpan"
 }
+
+Write-host "Starts on: $LiveOn ($Mode)"
 Write-Host "Lead Time: $LeadTime minutes"
 Write-Host "URL: $URL"
 Write-Host "Config: $ConfigFileInfo"
