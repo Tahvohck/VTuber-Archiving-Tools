@@ -7,7 +7,7 @@ param(
 	[DateTime]$LiveOn,
 
 	[Parameter(Mandatory=$true, ParameterSetName="StartsIn")]
-	[Timespan]$StartsIn,
+	[TimeSpan][string]$StartsIn,
 	
 	[int]$LeadTime = 5,
 	[int]$SecondsBetweenRetries = 15,
