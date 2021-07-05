@@ -53,6 +53,12 @@ Write-host "Starts on: $LiveOn ($Mode)"
 Write-Host "Lead Time: $LeadTime minutes"
 Write-Host "URL: $URL"
 Write-Host "Config: $ConfigFileInfo"
+if (($LiveOn - [datetime]::now).TotalHours -gt 24) {
+	Write-Host -Fore Red "Warning: Scheduled to start more than 24h from now."
+	if ($StartsIn -ne $null) {
+		Write-Host -Fore Red "Try using h:m:s format if this wasn't intentional."
+	}
+}
 
 Do {
 	$remainingtime = $LiveOn - [datetime]::now
