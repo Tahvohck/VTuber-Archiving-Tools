@@ -11,7 +11,8 @@ param(
 	
 	[int]$LeadTime = 5,
 	[int]$SecondsBetweenRetries = 15,
-	[string]$ConfigPath = "default.cfg"
+	[string]$ConfigPath = "default.cfg",
+	[Switch][bool]$ForceYTDL = $False
 )
 $BootPath = (Get-Item $PSCommandPath).Directory.Fullname
 Push-Location $BootPath
@@ -22,8 +23,8 @@ $fstring = "dd\ \d\a\y\s\ hh\:mm\:ss"
 ####################
 # Prechecks
 $ytdl = gcm yt-dlp -ea SilentlyContinue
-if ($ytdl -eq $null) {
-	Write-Host -Fore Cyan "Could not find YT-DLP, falling back to YT-DL"
+if ($ytdl -eq $null -or $ForceYTDL) {
+	if (-not $ForceYTDL) { Write-Host -Fore Cyan "Could not find YT-DLP, falling back to YT-DL"	}
 	$ytdl = gcm youtube-dl -ea SilentlyContinue
 }
 if ($ytdl -eq $null) {
