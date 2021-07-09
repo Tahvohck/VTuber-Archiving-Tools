@@ -24,11 +24,21 @@ if ($APIKEY -eq $null) {
 
 # Check channel for upcoming broadcasts.
 do {
-	$data = Invoke-RestMethod (
-		"https://www.googleapis.com/youtube/v3/search?eventType=upcoming&type=video" +
-		"&key=$APIKEY" +
-		"&channelId=$channelId" 
-	)
+	try {
+		$data = Invoke-RestMethod (
+			"https://www.googleapis.com/youtube/v3/search?eventType=upcoming&type=video" +
+			"&key=$APIKEY&channelId=$channelId"
+		)
+	} catch [Net.WebException] {
+		$reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+		$reader.BaseStream.Position = 0
+		$reader.DiscardBufferedData()
+		$resp = ($reader.ReadToEnd() | ConvertFrom-Json).error
+		Write-Host -Fore Red "Error:  " $resp.code
+		Write-Host -Fore Red "Reason: " $resp.errors.reason
+		Write-Host -Fore Red $resp.errors.message
+		return
+	}
 
 	$videoIDs = $data.items.id.videoId
 	if ($videoIDs -eq $null -and !$MonitorChannel) {
