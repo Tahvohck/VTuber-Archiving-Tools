@@ -6,9 +6,21 @@ param(
 	[Switch]$IncludeOngoing,
 	[Switch]$MonitorChannel,
 	[int]$MonitorWaitTime = 30,
-	
-	[String]$APIKEY = "AIzaSyDPsHMgQV1AEJNtfHWC8FVaDeyL0vbd60A"
+	[String]$APIKEY
 )
+$BootPath = (Get-Item $PSCommandPath).Directory.Fullname
+Push-Location $BootPath
+
+####################
+# Prechecks
+if ($APIKEY -eq $null) {
+	$APIKeyFileInfo = [IO.FileInfo][IO.Path]::Combine($pwd, "api.key")
+	if (!$APIKeyFileInfo.Exists){
+		Write-Host -Fore Red "An API key is needed to acces YT servers."
+		return
+	} else {
+	}
+}
 
 # Check channel for upcoming broadcasts.
 do {
