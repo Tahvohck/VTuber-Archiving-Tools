@@ -1,7 +1,7 @@
 param(
 	[Parameter(Mandatory=$true, Position=0)]
 	[String]$ChannelID,
-	
+
 	[Switch]$AskWhichToDownload,
 	[Switch]$IncludeOngoing,
 	[Switch]$MonitorChannel,
@@ -17,7 +17,7 @@ do {
 		"&key=$APIKEY" +
 		"&channelId=$channelId" 
 	)
-	
+
 	$videoIDs = $data.items.id.videoId
 	if ($videoIDs -eq $null -and !$MonitorChannel) {
 		Write-Host -Fore Red "Channel $ChannelID has no scheduled broadcasts."
@@ -73,11 +73,11 @@ if ($AskWhichToDownload -and $videoDataProcessed.length -gt 1) {
 		if ($video.startTimeLocalized -lt [DateTime]::now) { 
 			$args.ForeGround = "Yellow" 
 		}
-		
+
 		Write-Host @args
 		$optionIDX += 1
 	}
-	
+
 	# Only allow good choices
 	do {
 		[int]$choice = Read-Host "Select Video"
