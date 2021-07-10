@@ -34,7 +34,7 @@ if (!$ConfigFileInfo.Exists){
 }
 
 ####################
-# Prechecks
+# Helper functions
 function Get-APIRequest {
 	param($URI)
 	try {
