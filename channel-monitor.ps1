@@ -13,12 +13,13 @@ Push-Location $BootPath
 
 ####################
 # Prechecks
-if ($APIKEY -eq $null) {
+if ($APIKEY -eq "") {
 	$APIKeyFileInfo = [IO.FileInfo][IO.Path]::Combine($pwd, "api.key")
 	if (!$APIKeyFileInfo.Exists){
 		Write-Host -Fore Red "An API key is needed to acces YT servers."
 		return
 	} else {
+		$APIKEY = get-content $APIKeyFileInfo
 	}
 }
 
