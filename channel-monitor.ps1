@@ -117,9 +117,14 @@ $recalcTimes = @($LeadTime, ($LeadTime * 2), ($LeadTime * 4), ($LeadTime * 8), (
 $recalcIDX = $recalcTimes.Length - 1
 
 # Skip any check times less than current time remaining.
-while ($remainingTime.TotalMinutes -lt $recalcTimes[$recalcIDX]) { $recalcIDX -= 1 }
+while ($remainingTime.TotalMinutes -lt $recalcTimes[$recalcIDX]) {
+	$recalcIDX -= 1
+	if ($recalcIDX -eq 0) {break}
+}
 
 do {
+	if ($selectedVideo.status -eq "live") { break }
+
 	$remainingTime = $StartTime - [DateTime]::Now
 	if ($remainingTime.TotalMinutes -lt $recalcTimes[$recalcIDX]) {
 		Write-Host "Rechecking start time... " -NoNewLine
