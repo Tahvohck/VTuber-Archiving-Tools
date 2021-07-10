@@ -111,13 +111,30 @@ Write-Host ([String]::Format($infoString, "Video",		$selectedVideo.title))
 Write-Host ([String]::Format($infoString, "Starts",		([DateTime]$selectedVideo.available_at)))
 Write-Host ([String]::Format($infoString, "Lead Time",	"$LeadTime minutes"))
 
-$StartTime = [DateTime]$selectedVideo.available_at
+# Wait loop setup
 $fstring = "dd\ \d\a\y\s\ hh\:mm\:ss"
+$StartTime = [DateTime]$selectedVideo.available_at
+$remainingTime = $StartTime - [DateTime]::Now
+$recalcTimes = @($LeadTime, ($LeadTime * 2), ($LeadTime * 4), ($LeadTime * 8), ($LeadTime * 16), ($LeadTime * 32))
+$recalcIDX = $recalcTimes.Length - 1
+
+# Skip any check times less than current time remaining.
+while ($remainingTime.TotalMinutes -lt $recalcTimes[$recalcIDX]) { $recalcIDX -= 1 }
+
 do {
 	$remainingTime = $StartTime - [DateTime]::Now
+	if ($remainingTime.TotalMinutes -lt $recalcTimes[$recalcIDX]) {
+		Write-Host "Rechecking start time... " -NoNewLine
+		$selectedVideo = Get-APIRequest "https://holodex.net/api/v2/live?id=$($selectedVideo.id)"
+		$StartTime = [DateTime]$selectedVideo.available_at
+		$remainingTime = $StartTime - [DateTime]::Now
+		if ($recalcIDX -gt 0)	{ $recalcIDX -= 1 }
+		else					{ $recalcIDX = 0 }
+		Write-Host $StartTime
+	}
 	$ready = $remainingTime.TotalMinutes -lt $LeadTime
 	Write-Progress `
-		-Activity "Waiting for stream to start" `
+		-Activity "Waiting for stream to start. Verifying start time at $($recalcTimes[$recalcIDX]) minutes" `
 		-Status $remainingtime.ToString($fstring)
 	sleep 1
 } while (!$ready)
