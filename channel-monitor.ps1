@@ -141,3 +141,14 @@ do {
 		-Status $remainingtime.ToString($fstring)
 	sleep 1
 } while (!$ready)
+
+
+####################
+# Download loop
+Do {
+	& $ytdl --config-location "$ConfigFileInfo" `
+		"https://youtu.be/$($selectedVideo.id)"
+	$Downloaded = $?
+	sleep $SecondsBetweenRetries
+} while (!$Downloaded)
+Pop-Location
