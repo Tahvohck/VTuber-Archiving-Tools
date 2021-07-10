@@ -110,3 +110,14 @@ Write-Host ([String]::Format($infoString, "Channel",	$selectedVideo.channel.name
 Write-Host ([String]::Format($infoString, "Video",		$selectedVideo.title))
 Write-Host ([String]::Format($infoString, "Starts",		([DateTime]$selectedVideo.available_at)))
 Write-Host ([String]::Format($infoString, "Lead Time",	"$LeadTime minutes"))
+
+$StartTime = [DateTime]$selectedVideo.available_at
+$fstring = "dd\ \d\a\y\s\ hh\:mm\:ss"
+do {
+	$remainingTime = $StartTime - [DateTime]::Now
+	$ready = $remainingTime.TotalMinutes -lt $LeadTime
+	Write-Progress `
+		-Activity "Waiting for stream to start" `
+		-Status $remainingtime.ToString($fstring)
+	sleep 1
+} while (!$ready)
