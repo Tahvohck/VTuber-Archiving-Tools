@@ -78,16 +78,12 @@ if ($AskWhichToDownload -and $videos.length -gt 1) {
 		$title = if ($video.title.length -gt 50) { $video.title.Substring(0,50) }
 			else { $video.title }
 		$args = @{
-			Object = [string]::format( "[{0,3:d}] {1} {2} {3}",
-				$optionIDX,
+			Object = [string]::format( "[{0,3:d}] {3} {1} {2}",
+				$optionIDX, $video.id, $title,
 				([DateTime]$video.available_at).ToString("yyyyMMdd HH:mm"),
-				$video.id,
-				$title
 			)
 		}
-		if ($video.status -eq "live") { 
-			$args.ForeGround = "Yellow" 
-		}
+		if ($video.status -eq "live") { $args.ForeGround = "Yellow" }
 
 		Write-Host @args
 		$optionIDX += 1
@@ -105,10 +101,12 @@ if ($AskWhichToDownload -and $videos.length -gt 1) {
 	$selectedVideo = $videos[0]
 }
 
+# Print current video and configuration
 $InfoString = "{0,-12} {1}"
 Write-Host ([String]::Format($infoString, "Channel",	$selectedVideo.channel.name))
 Write-Host ([String]::Format($infoString, "Video",		$selectedVideo.title))
 Write-Host ([String]::Format($infoString, "Starts",		([DateTime]$selectedVideo.available_at)))
+Write-Host ([String]::Format($infoString, "Config",		$ConfigFileInfo))
 Write-Host ([String]::Format($infoString, "Lead Time",	"$LeadTime minutes"))
 
 # Wait loop setup
