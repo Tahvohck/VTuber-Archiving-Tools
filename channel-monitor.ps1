@@ -1,16 +1,34 @@
+<#
+.SYNOPSIS
+	Check a channel for upcoming live broadcasts, then wait for the broadcast for a reasonable time before trying to download it.
+	NOTE: Only works for channels registered to holodex.
+
+.DESCRIPTION
+	This is a wrapper script for youtube-dl that facilitates monitoring a vtuber channel for live broadcasts and automatically downloading them when they start, with smart wait logic to avoid hammering the youtube platform and potentially getting your download rate throttled. It can be used in fully automatic mode, or ask the user when there are several upcoming broadcasts (see -Detailed help for info). It requires youtube-dl or yt-dlp to operate, and expects a config file for them named `default.cfg' in the same directory. Alternate config files may be supplied.
+	It uses the holodex API to query channels for upcoming broadcasts as well as for info on the videos themselves. It should cleanly exit on any instance of the holodex API returning an error, if it does not please open an issue on the github repository.
+#>
 param(
+	# The channel ID to search against. https://www.youtube.com/channel/<ChannelID>
 	[Parameter(Mandatory=$true, Position=0)]
 	[String]$ChannelID,
 
+	# If there is more than one video ask the user which to download. Otherwise the soonest video will be downloaded.
 	[Switch]$AskWhichToDownload,
+	# Include currently live videos in the search.
 	[Switch]$IncludeOngoing,
+	# If a channel has no currently scheduled broadcasts monitor it for videos instead of exiting immediately.
 	[Switch]$MonitorChannel,
+	# When monitoring, the time in minutes to wait between checks.
 	[int]$MonitorWaitTime = 60,
+	# When waiting for a video to start, the threshold in minutes before actively checking if the video is live.
 	[int]$LeadTime = 5,
+	# When actively checking if the video is live, the time in seconds to wait between checks.
 	[int]$SecondsBetweenRetries = 15,
 
+	# An alternate youtube-dl config file to use. Must be a relative path.
 	[string]$ConfigPath = "default.cfg",
-	[Switch][bool]$ForceYTDL = $False
+	# If both youtube-dl and YT-DLP are installed, force the use of youtube-dl.
+	[Switch]$ForceYTDL = $False
 )
 $BootPath = (Get-Item $PSCommandPath).Directory.Fullname
 Push-Location $BootPath
