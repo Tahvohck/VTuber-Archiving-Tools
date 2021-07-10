@@ -103,7 +103,7 @@ if ($AskWhichToDownload -and $videos.length -gt 1) {
 
 # Print current video and configuration
 $InfoString = "{0,-12} {1}"
-Write-Host ([String]::Format($infoString, "Channel",	$selectedVideo.channel.name))
+Write-Host ([String]::Format($infoString, "Channel",	$selectedVideo.channel.english_name))
 Write-Host ([String]::Format($infoString, "Video",		$selectedVideo.title))
 Write-Host ([String]::Format($infoString, "Starts",		([DateTime]$selectedVideo.available_at)))
 Write-Host ([String]::Format($infoString, "Config",		$ConfigFileInfo))
