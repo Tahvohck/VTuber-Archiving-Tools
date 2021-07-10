@@ -80,7 +80,7 @@ if ($AskWhichToDownload -and $videos.length -gt 1) {
 		$args = @{
 			Object = [string]::format( "[{0,3:d}] {3} {1} {2}",
 				$optionIDX, $video.id, $title,
-				([DateTime]$video.available_at).ToString("yyyyMMdd HH:mm"),
+				([DateTime]$video.available_at).ToString("yyyyMMdd HH:mm")
 			)
 		}
 		if ($video.status -eq "live") { $args.ForeGround = "Yellow" }
