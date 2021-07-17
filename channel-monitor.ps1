@@ -66,7 +66,8 @@ function Get-APIRequest {
 		$resp = ($reader.ReadToEnd() | ConvertFrom-Json)
 		$resp
 		Exit
-	} catch [Net.Http.HttpRequestException] {
+	} catch {
+		Write-Host -Fore Red "Error retreiving URL: $URI"
 		Write-Host -Fore Red $_.Exception.Message
 		$_
 		Exit
