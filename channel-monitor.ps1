@@ -102,7 +102,7 @@ if ($AskWhichToDownload -and $videos.length -gt 1) {
 		$args = @{
 			Object = [string]::format( "[{0,3:d}] {3} {1} {2}",
 				$optionIDX, $video.id, $title,
-				([DateTime]$video.available_at).ToLocalTime().ToString("yyyyMMdd HH:mm")
+				$video.available_at.ToLocalTime().ToString("yyyyMMdd HH:mm")
 			)
 		}
 		if ($video.status -eq "live") { $args.ForeGround = "Yellow" }
@@ -127,13 +127,13 @@ if ($AskWhichToDownload -and $videos.length -gt 1) {
 $InfoString = "{0,-12} {1}"
 Write-Host ([String]::Format($infoString, "Channel",	$selectedVideo.channel.english_name))
 Write-Host ([String]::Format($infoString, "Video",		$selectedVideo.title))
-Write-Host ([String]::Format($infoString, "Starts",		([DateTime]$selectedVideo.available_at).ToLocalTime()))
+Write-Host ([String]::Format($infoString, "Starts",		$selectedVideo.available_at.ToLocalTime()))
 Write-Host ([String]::Format($infoString, "Config",		$ConfigFileInfo))
 Write-Host ([String]::Format($infoString, "Lead Time",	"$LeadTime minutes"))
 
 # Wait loop setup
 $fstring = "dd\ \d\a\y\s\ hh\:mm\:ss"
-$StartTime = ([DateTime]$selectedVideo.available_at).ToLocalTime()
+$StartTime = $selectedVideo.available_at.ToLocalTime()
 $remainingTime = $StartTime - [DateTime]::Now
 $recalcTimes = @($LeadTime, ($LeadTime * 2), ($LeadTime * 4), ($LeadTime * 8), ($LeadTime * 16), ($LeadTime * 32))
 $recalcIDX = $recalcTimes.Length - 1
@@ -151,7 +151,7 @@ do {
 	if ($remainingTime.TotalMinutes -lt $recalcTimes[$recalcIDX]) {
 		Write-Host "Rechecking start time... " -NoNewLine
 		$selectedVideo = Get-APIRequest "https://holodex.net/api/v2/live?id=$($selectedVideo.id)"
-		$StartTime = ([DateTime]$selectedVideo.available_at).ToLocalTime()
+		$StartTime = $selectedVideo.available_at.ToLocalTime()
 		$remainingTime = $StartTime - [DateTime]::Now
 		if ($recalcIDX -gt 0)	{ $recalcIDX -= 1 }
 		else					{ $recalcIDX = 0 }
