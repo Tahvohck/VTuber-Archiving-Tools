@@ -66,6 +66,10 @@ function Get-APIRequest {
 		$resp = ($reader.ReadToEnd() | ConvertFrom-Json)
 		$resp
 		Exit
+	} catch [Net.Http.HttpRequestException] {
+		Write-Host -Fore Red $_.Exception.Message
+		$_
+		Exit
 	}
 }
 
