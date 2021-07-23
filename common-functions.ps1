@@ -6,6 +6,7 @@ function Get-APIRequest {
 	param(
 		#URI to reach out to.
 		[Parameter(Mandatory=$true, Position=0)][String]$URI,
+		[Hashtable]$Parameters = $null,
 		# Do not write errors to console.
 		[Switch]$Quiet
 	)
@@ -16,8 +17,17 @@ function Get-APIRequest {
 	}
 
 	try {
+		if ($Parameters -ne $null) {
+			$URIParamArray = [Collections.ArrayList]::new()
+			Write-Debug "Generating param string"
+			foreach ($k in $Parameters.Keys) {
+				$null = $URIParamArray.Add("$k=$($Parameters[$k])")
+			}
+			$PString = "?" + [String]::Join('&', $URIParamArray.ToArray())
+			Write-Debug "Param string is: $PString"
+		}
 		Write-Debug "Calling REST Method"
-		$tmp.data = Invoke-RestMethod -ea Stop $uri
+		$tmp.data = Invoke-RestMethod -ea Stop ($URI + $PString)
 	} catch [Net.Http.HttpRequestException] {
 		Write-Debug "REST Method complete with exception"
 		$tmp.error = [PSCustomObject]@{
