@@ -40,6 +40,13 @@ function Download-Video {
 $ScriptPath = (Get-Item $PSCommandPath).Directory.Fullname
 Push-Location $ScriptPath
 
+$commFunc = gcm .\common-functions.ps1
+if ($commFunc -eq $null) {
+	Write-Host -Fore Red "Missing a required library file. Terminating."
+	return
+}
+. $commFunc
+
 $ytdl = gcm yt-dlp -ea SilentlyContinue
 if ($ytdl -eq $null -or $ForceYTDL) {
 	if (-not $ForceYTDL) {
