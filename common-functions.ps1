@@ -44,7 +44,7 @@ function Get-APIRequest {
 		$reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
 		$reader.BaseStream.Position = 0
 		$reader.DiscardBufferedData()
-		$reader.ReadToEnd() | ConvertFrom-Json
+		$tmp.data = $reader.ReadToEnd() | ConvertFrom-Json
 	} catch {
 		Write-Debug "REST Method in unknown state, probably failed."
 		$tmp.error = [PSCustomObject]@{
