@@ -82,3 +82,21 @@ function Write-HostWithSpacedHeader {
 		$Obj
 	))
 }
+
+
+<#
+.SYNOPSIS
+	Helper function that truncates a string.
+#>
+function Truncate-String {
+	param (
+		[Parameter(Mandatory=$true, Position=0)]
+		[String]$Str,
+		[int]$MaxLength = 50
+	)
+	if ($Str.Length -lt $MaxLength) {
+		return $Str
+	} else {
+		return $Str.Substring(0, $MaxLength)
+	}
+}
