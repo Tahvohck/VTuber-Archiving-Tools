@@ -90,6 +90,7 @@ function Truncate-String {
 	param (
 		[Parameter(Mandatory=$true, Position=0)]
 		[String]$Str,
+		[Parameter(Mandatory=$true, Position=1)]
 		[int]$MaxLength = 50
 	)
 	if ($Str.Length -lt $MaxLength) {
