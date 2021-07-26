@@ -87,6 +87,9 @@ do {
 	if ([Console]::KeyAvailable) {
 		$key = [Console]::ReadKey($true)
 		$UserQuit = $key.key -eq "Q"
-		Write-Host "Exiting..."
+		if ($UserQuit) {
+			Write-Host "Exiting..."
+			continue
+		}
 	}
 } while (!$UserQuit)
