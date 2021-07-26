@@ -2,6 +2,7 @@ param(
 	# The channel ID to search against. https://www.youtube.com/channel/<ChannelID>
 	[Parameter(Mandatory=$true, Position=0)]
 	[String[]]$ChannelIDs,
+	[Regex[]]$TitleRegex,
 
 	# Include currently live videos in the search.
 	[Switch]$IncludeOngoing,
@@ -65,7 +66,7 @@ if (!$ConfigFileInfo.Exists){
 	return
 }
 
-$ValidChannels = foreach ($CID in $ChannelIDs) {
+$channels = foreach ($CID in ($ChannelIDs | Get-Unique)) {
 	$chanData = Get-APIRequest -Quiet "https://holodex.net/api/v2/channels/$CID"
 	if (!$chanData.success) {
 		if ($chanData.data.Message -ne $null) {
@@ -79,9 +80,15 @@ $ValidChannels = foreach ($CID in $ChannelIDs) {
 	$chanData.data
 }
 
+
 ####################
 # Main loop
 Write-Host "Beginning to monitor. Press Q to quit."
+$LastChannelCheckTime = [DateTime]::new(0)
+$MonitoredVideos = @{}
+$MaxMonitoredVideosBeforeCulling = $channels.Count * 4
+$MonitoringJobs = [Collections.ArrayList]::new()
+Write-Debug "Capping monitored videos at $MaxMonitoredVideosBeforeCulling"
 do {
 	# Check if user requested quit
 	if ([Console]::KeyAvailable) {
@@ -90,6 +97,47 @@ do {
 		if ($UserQuit) {
 			Write-Host "Exiting..."
 			continue
+		}
+	}
+
+	$MonitoringJobs | ?{ $_.HasMoreData } | %{
+		Receive-Job | Write-Host
+	}
+
+	# If it hasn't been enough time, skip this loop iteration
+	if (([DateTime]::Now - $LastChannelCheckTime).TotalMinutes -lt $MonitorWaitTime) { continue }
+	$LastChannelCheckTime = [DateTime]::Now
+	Write-Debug "Checking $($channels.Count) channels at $LastChannelCheckTime"
+
+	# Check channels
+	foreach ($channel in $channels) {
+		# Get all videos. Skip any failed requests. Extract data from wrapper
+		$videoList = Get-APIRequest "https://holodex.net/api/v2/live" -Parameters @{
+			status = "live,upcoming"
+			channel_id = $channel.id
+		} | Where-Object {
+			# Only use requests that succeeded and remove live if not requested
+			$_.success -and
+			($IncludeOngoing -or $_.data.status -eq "upcoming")
+		} | ForEach-Object {
+			# Don't need the wrapper anymore, discard to data only
+			$_.data
+		} | Where-Object {
+			# Remove videos we already know about, and filter on titles if requested
+			!$MonitoredVideos.Contains($_.id) -and
+			@($TitleRegex.Match($_.title).Success).Contains($True)
+		}
+
+		# skip if no videos
+		if ($videoList.Count -eq 0) { continue }
+
+		Write-Debug "Found $($videoList.Count) new video(s) for channel $($channel.name)"
+		foreach ($videoData in $videoList) {
+			if ($MonitoredVideos.Contains($videoData.id)) { continue }
+			$MonitoredVideos[$videoData.id] = $videoData
+			Write-Debug "Inserted video: $($videoData.id)"
+			Write-HostWithSpacedHeader $videoData.id (Truncate-String $videoData.Title ([Console]::WindowWidth - 30))
+			Write-HostWithSpacedHeader "Starts" $videoData.start_scheduled.ToLocalTime()
 		}
 	}
 } while (!$UserQuit)
