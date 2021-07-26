@@ -62,3 +62,23 @@ function Get-APIRequest {
 	}
 	return $tmp
 }
+
+
+<#
+.SYNOPSIS
+	Helper function that takes a header string and any other object, then applies proper spacing between them.
+#>
+function Write-HostWithSpacedHeader {
+	param (
+		[Parameter(Mandatory=$true, Position=0)]
+		[String]$Header,
+		[Parameter(Mandatory=$true, Position=1)]
+		$Obj,
+		[int]$HeaderSize = -15
+	)
+	Write-Host ([String]::Format(
+		"{0,$HeaderSize} {1}",
+		$Header,
+		$Obj
+	))
+}
