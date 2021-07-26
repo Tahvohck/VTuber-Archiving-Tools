@@ -76,10 +76,8 @@ function Write-HostWithSpacedHeader {
 		$Obj,
 		[int]$HeaderSize = -15
 	)
-	Write-Host ([String]::Format(
-		"{0,$HeaderSize} {1}",
-		$Header,
-		$Obj
+	Write-Host ([String]::Format("{0,$HeaderSize} {1}",
+		$Header, $Obj
 	))
 }
 
