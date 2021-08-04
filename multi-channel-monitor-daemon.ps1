@@ -71,10 +71,68 @@ if ($null -ne $TitleRegex){
 # Job payload
 $WaitAndGetVideo = {
 	param($state, $Video)
-	sleep 30
-	# Wait for video to start
+	# Reusable code blocks
+	$CB_SetRecheckTime = { [Math]::Min(
+		[float]$MaxRecheckTime,
+		($Video.start_scheduled.ToLocalTime() - [DateTime]::Now).TotalMinutes / 2
+	)}
+	$CB_UpdateVideo = { $Video = (Get-APIRequest "https://holodex.net/api/v2/videos/$($Video.ID)").data }
+	# Local variables
+	$MaxRecheckTime = 120		# Max recheck time is 2 hours
+	$CurrentRecheckPeriod = . $CB_SetRecheckTime
+	$LastVideoStartTime = $video.start_scheduled.ToLocalTime()
+	$LastCheckTime = [DateTime]::Now
+
+	# Wait for video to be close to starting
+	do {
+		if (([DateTime]::Now - $LastCheckTime).TotalMinutes -gt $CurrentRecheckPeriod) {
+			. $CB_UpdateVideo
+			# Check to see if the video start time changed
+			if ($LastVideoStartTime -lt $Video.start_scheduled.ToLocalTime()) {
+				$LastVideoStartTime = $video.start_scheduled.ToLocalTime()
+				Write-Host ("Video $($Video.ID)/$($video.channel.name) was delayed." +
+							"New start time is $LastVideoStartTime")
+			}
+			$CurrentRecheckPeriod = . $CB_SetRecheckTime
+		}
+
+		$TimeAfterRecheckPeriod = [DateTime]::Now.AddMinutes($CurrentRecheckPeriod)
+		$TimeLeadTimeStarts = $LastVideoStartTime.AddMinutes(-$state.LeadTime)
+
+		# If we're on the edge of the lead time wait the remaining time then exit this loop.
+		if ($TimeAfterRecheckPeriod -gt $TimeLeadTimeStarts){
+			if ([DateTime]::Now.AddSeconds(1) -lt $TimeLeadTimeStarts){
+				Start-Sleep ($TimeLeadTimeStarts - [DateTime]::Now).TotalSeconds
+			}
+			$NotInLeadTime = $false
+			continue
+		}
+
+		Start-Sleep $state.SecondsBetweenRetries
+		$NotInLeadTime = [DateTime]::Now -lt $TimeLeadTimeStarts
+	} while ($NotInLeadTime)
 
 	# Begin downloading video
+	Write-Host "Video $($Video.ID)/$($video.channel.name) will be starting soon."
+	$stdout = @()
+	$stderr = @()
+	Do {
+		# Run the downloader, capturing both stdout and stderr.
+		$stderr += $( $stdout += & $state.Downloader `
+			--config-location "$($state.ConfigFileInfo)" `
+			"https://youtu.be/$($video.id)"
+		) 2>&1
+		$Downloaded = $?
+		if ($Downloaded -or $CheckPeriod) {
+			# Once the downloader thinks the video is done, confirm with holodex that it's actually offline.
+			. $CB_UpdateVideo
+			$CheckPeriod = $true
+			if ($Video.state -eq "past") { $Finished = $true }
+			else { Start-Sleep 1}
+			continue
+		}
+		Start-Sleep $state.SecondsBetweenRetries
+	} while (!$Finished)
 
 	# Done downloading video.
 	return $Video.id
