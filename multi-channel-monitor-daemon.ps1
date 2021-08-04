@@ -17,7 +17,8 @@ param(
 	# An alternate youtube-dl config file to use. Must be a relative path.
 	[string]$ConfigPath = "default.cfg",
 	# If both youtube-dl and YT-DLP are installed, force the use of youtube-dl.
-	[Switch]$ForceYTDL
+	[Switch]$ForceYTDL,
+	[Switch]$PassThru
 )
 
 
@@ -185,3 +186,8 @@ do {
 } while (!$UserQuit)
 
 $MonitoringJobs.Keys | Stop-Job -PassThru | Remove-Job
+
+if ($PassThru) {
+	Write-Host "User requested videos be returned"
+	@($MonitoredVideos.Values.GetEnumerator())
+}
