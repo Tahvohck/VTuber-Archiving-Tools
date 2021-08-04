@@ -22,20 +22,6 @@ param(
 
 
 ####################
-# Internal functions
-$WaitAndGetVideo = {
-	param($state, $Video)
-	sleep 30
-	# Wait for video to start
-
-	# Begin downloading video
-
-	# Done downloading video.
-	return $Video.id
-}
-
-
-####################
 # Prechecks/Warmup
 $ScriptPath = (Get-Item $PSCommandPath).Directory.Fullname
 Push-Location $ScriptPath
@@ -71,6 +57,23 @@ if (!$ConfigFileInfo.Exists){
 }
 $state.ConfigFileInfo = $ConfigFileInfo
 
+
+####################
+# Job payload
+$WaitAndGetVideo = {
+	param($state, $Video)
+	sleep 30
+	# Wait for video to start
+
+	# Begin downloading video
+
+	# Done downloading video.
+	return $Video.id
+}
+
+
+####################
+# Channel checks
 $channels = foreach ($CID in ($ChannelIDs | Get-Unique)) {
 	$chanData = Get-APIRequest -Quiet "https://holodex.net/api/v2/channels/$CID"
 	if (!$chanData.success) {
