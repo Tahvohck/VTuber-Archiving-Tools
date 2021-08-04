@@ -112,7 +112,7 @@ do {
 		# Unlinked if statements, sometimes the completion and the video ID return
 		# don't happen on the same cycle. As it's the last statement in the script
 		# block though, handling them on separate cycles is fine.
-		if ($JobVideoID -ne $null) {
+		if ($null -ne $JobVideoID) {
 			$MonitoredVideos.Remove($JobVideoID)
 		}
 		if ($_.state -eq "Completed") {
