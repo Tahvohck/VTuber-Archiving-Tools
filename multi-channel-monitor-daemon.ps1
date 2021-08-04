@@ -74,7 +74,7 @@ $WaitAndGetVideo = {
 
 ####################
 # Channel checks
-$channels = foreach ($CID in ($ChannelIDs | Get-Unique)) {
+$channels = @(foreach ($CID in ($ChannelIDs | Get-Unique)) {
 	$chanData = Get-APIRequest -Quiet "https://holodex.net/api/v2/channels/$CID"
 	if (!$chanData.success) {
 		if ($null -ne $chanData.data.Message) {
@@ -86,6 +86,11 @@ $channels = foreach ($CID in ($ChannelIDs | Get-Unique)) {
 	}
 	Write-Host "Found channel to monitor: $($chanData.data.name)"
 	$chanData.data
+})
+
+if ($channels.Length -eq 0) {
+	Write-Host -Fore Red "No valid channels to monitor. Double-check your ChannelIDs list."
+	return
 }
 
 
