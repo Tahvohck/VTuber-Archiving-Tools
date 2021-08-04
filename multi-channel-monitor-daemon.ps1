@@ -28,6 +28,8 @@ Push-Location $ScriptPath
 $state = @{
 	LeadTime = $LeadTime
 	SecondsBetweenRetries = $SecondsBetweenRetries
+	Downloader = $null
+	ConfigFileInfo = $null
 }
 
 $commFunc = gcm .\common-functions.ps1
