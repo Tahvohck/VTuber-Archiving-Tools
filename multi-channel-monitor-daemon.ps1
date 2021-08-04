@@ -149,21 +149,17 @@ do {
 		$videoList = Get-APIRequest "https://holodex.net/api/v2/live" -Parameters @{
 			status = "live,upcoming"
 			channel_id = $channel.id
-		} | Where-Object {
-			# Only use requests that succeeded and remove live if not requested
-			$_.success -and
-			($IncludeOngoing -or $_.data.status -eq "upcoming")
-		} | ForEach-Object {
-			# Don't need the wrapper anymore, discard to data only
-			$_.data
-		} | Where-Object {
-			# Remove videos we already know about, and filter on titles if requested
-			if ($null -ne $TitleRegex) {
-				!$MonitoredVideos.Contains($_.id) -and
+		} | Where-Object { $_.success } | ForEach-Object { $_.data } | Where-Object {
+			# Only use requests that succeeded, then discard the wrapper to data only. (lines above)
+			# Include live videos if requested. Then remove videos we already know about, and filter
+			# on titles if requested.
+			($IncludeOngoing -or $_.status -eq "upcoming") -and
+			!$MonitoredVideos.Contains($_.id) -and
+			$(if ($null -ne $TitleRegex) {
 				@($TitleRegex.Match($_.title).Success).Contains($True)
 			} else {
-				!$MonitoredVideos.Contains($_.id)
-			}
+				$true	# Pass if no regexes to check against
+			})
 		}
 
 		# skip if no videos
