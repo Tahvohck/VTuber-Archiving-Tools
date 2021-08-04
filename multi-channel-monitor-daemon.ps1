@@ -157,8 +157,12 @@ do {
 			$_.data
 		} | Where-Object {
 			# Remove videos we already know about, and filter on titles if requested
-			!$MonitoredVideos.Contains($_.id) -and
-			@($TitleRegex.Match($_.title).Success).Contains($True)
+			if ($null -ne $TitleRegex) {
+				!$MonitoredVideos.Contains($_.id) -and
+				@($TitleRegex.Match($_.title).Success).Contains($True)
+			} else {
+				!$MonitoredVideos.Contains($_.id)
+			}
 		}
 
 		# skip if no videos
