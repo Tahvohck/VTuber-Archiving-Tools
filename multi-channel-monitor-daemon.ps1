@@ -1,7 +1,17 @@
+<#
+.SYNOPSIS
+	A monitor daemon for automatically downloading livestreams from multiple channels at once.
+.DESCRIPTION
+	Monitors multiple channels and schedules downloads in the background. Designed to be run as a daemon program.
+	Has some basic attempts to restart if a VOD has connection issues, but it's not aggressive: At least 120
+	seconds of the VOD will be missing if the connection error is enough to disconnect the downloader.
+	Requires the following: youtube-dl OR YT-DLP, 'common-functions.ps1'.
+#>
 param(
-	# The channel ID to search against. https://www.youtube.com/channel/<ChannelID>
+	# An array of channel IDs to search against. https://www.youtube.com/channel/<ChannelID>
 	[Parameter(Mandatory=$true, Position=0)]
 	[String[]]$ChannelIDs,
+	# An optional array of regex filters to apply. Case insensitive.
 	[Regex[]]$TitleRegex,
 
 	# Include currently live videos in the search.
@@ -18,6 +28,7 @@ param(
 	[string]$ConfigPath = "default.cfg",
 	# If both youtube-dl and YT-DLP are installed, force the use of youtube-dl.
 	[Switch]$ForceYTDL,
+	# When quitting, return any currently monitored videos to the pipeline.
 	[Switch]$PassThru
 )
 
