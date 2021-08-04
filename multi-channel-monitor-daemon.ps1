@@ -150,6 +150,7 @@ $WaitAndGetVideo = {
 		}
 		Start-Sleep $state.SecondsBetweenRetries
 	} while (!$Finished)
+	Write-Host "Video $($Video.ID)/$($video.channel.name) has finished downloading."
 
 	# Done downloading video.
 	return $Video.id
