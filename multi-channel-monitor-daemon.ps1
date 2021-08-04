@@ -23,16 +23,15 @@ param(
 
 ####################
 # Internal functions
-function Monitor-Channel {
-	param([String]$channel)
-}
+$WaitAndGetVideo = {
+	param($state, $Video)
+	sleep 30
+	# Wait for video to start
 
-function WaitFor-Video {
-	param([String]$videoID)
-}
+	# Begin downloading video
 
-function Download-Video {
-	param([String]$videoID)
+	# Done downloading video.
+	return $Video.id
 }
 
 
@@ -40,6 +39,10 @@ function Download-Video {
 # Prechecks/Warmup
 $ScriptPath = (Get-Item $PSCommandPath).Directory.Fullname
 Push-Location $ScriptPath
+$state = @{
+	LeadTime = $LeadTime
+	SecondsBetweenRetries = $SecondsBetweenRetries
+}
 
 $commFunc = gcm .\common-functions.ps1
 if ($null -eq $commFunc) {
@@ -59,12 +62,14 @@ if ($null -eq $ytdl) {
 	Write-Host -Fore Red "YT-DL could not be found! Make sure it's on the PATH"
 	return
 }
+$state.Downloader = $ytdl
 
 $ConfigFileInfo = [IO.FileInfo][IO.Path]::Combine($pwd, $ConfigPath)
 if (!$ConfigFileInfo.Exists){
 	Write-Host -Fore Red "Couldn't find YT-DL config file $ConfigFileInfo"
 	return
 }
+$state.ConfigFileInfo = $ConfigFileInfo
 
 $channels = foreach ($CID in ($ChannelIDs | Get-Unique)) {
 	$chanData = Get-APIRequest -Quiet "https://holodex.net/api/v2/channels/$CID"
@@ -87,7 +92,7 @@ Write-Host "Beginning to monitor. Press Q to quit."
 $LastChannelCheckTime = [DateTime]::new(0)
 $MonitoredVideos = @{}
 $MaxMonitoredVideosBeforeCulling = $channels.Count * 4
-$MonitoringJobs = [Collections.ArrayList]::new()
+$MonitoringJobs = @{}
 Write-Debug "Capping monitored videos at $MaxMonitoredVideosBeforeCulling"
 do {
 	# Check if user requested quit
@@ -100,8 +105,20 @@ do {
 		}
 	}
 
-	$MonitoringJobs | ?{ $_.HasMoreData } | %{
-		Receive-Job | Write-Host
+	$MonitoringJobs | Where-Object{ $_.HasMoreData } | ForEach-Object{
+		# This will allow the underlying script block to return any console output
+		# while capturing actual returned values.
+		$JobVideoID = Receive-Job $_
+		# Unlinked if statements, sometimes the completion and the video ID return
+		# don't happen on the same cycle. As it's the last statement in the script
+		# block though, handling them on separate cycles is fine.
+		if ($JobVideoID -ne $null) {
+			$MonitoredVideos.Remove($JobVideoID)
+		}
+		if ($_.state -eq "Completed") {
+			$MonitoringJobs.Remove($_)
+			Remove-Job $_
+		}
 	}
 
 	# If it hasn't been enough time, skip this loop iteration
@@ -133,11 +150,16 @@ do {
 
 		Write-Debug "Found $($videoList.Count) new video(s) for channel $($channel.name)"
 		foreach ($videoData in $videoList) {
-			if ($MonitoredVideos.Contains($videoData.id)) { continue }
 			$MonitoredVideos[$videoData.id] = $videoData
 			Write-Debug "Inserted video: $($videoData.id)"
 			Write-HostWithSpacedHeader $videoData.id (Truncate-String $videoData.Title ([Console]::WindowWidth - 30))
 			Write-HostWithSpacedHeader "Starts" $videoData.start_scheduled.ToLocalTime()
+
+			$Job = Start-Job $WaitAndGetVideo `
+				-ArgumentList $state,$videoData `
+				-InitializationScript {. .\common-functions.ps1} `
+				-Name "$($channel.english_name)_$($videoData.id)"
+			$MonitoringJobs[$Job] = $videoData.id
 		}
 	}
 } while (!$UserQuit)
