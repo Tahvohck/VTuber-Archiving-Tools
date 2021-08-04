@@ -121,7 +121,7 @@ do {
 		}
 	}
 
-	$MonitoringJobs | Where-Object{ $_.HasMoreData } | ForEach-Object{
+	$MonitoringJobs.Keys | Where-Object{ $_.HasMoreData } | ForEach-Object{
 		# This will allow the underlying script block to return any console output
 		# while capturing actual returned values.
 		$JobVideoID = Receive-Job $_
@@ -183,3 +183,5 @@ do {
 		}
 	}
 } while (!$UserQuit)
+
+$MonitoringJobs.Keys | Stop-Job -PassThru | Remove-Job
