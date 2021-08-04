@@ -85,6 +85,7 @@ $WaitAndGetVideo = {
 
 	# Wait for video to be close to starting
 	do {
+		# If the wait period is up, ask holodex to update us.
 		if (([DateTime]::Now - $LastCheckTime).TotalMinutes -gt $CurrentRecheckPeriod) {
 			. $CB_UpdateVideo
 			# Check to see if the video start time changed
@@ -125,6 +126,8 @@ $WaitAndGetVideo = {
 		$Downloaded = $?
 		if ($Downloaded -or $CheckPeriod) {
 			# Once the downloader thinks the video is done, confirm with holodex that it's actually offline.
+			# The logic here prevents this from firing if the video hasn't started, but makes it keep checking
+			# once the video has.
 			. $CB_UpdateVideo
 			$CheckPeriod = $true
 			if ($Video.state -eq "past") { $Finished = $true }
