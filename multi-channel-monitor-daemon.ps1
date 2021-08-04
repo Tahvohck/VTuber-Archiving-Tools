@@ -59,6 +59,12 @@ if (!$ConfigFileInfo.Exists){
 }
 $state.ConfigFileInfo = $ConfigFileInfo
 
+if ($null -ne $TitleRegex){
+	$TitleRegex = @( foreach($rgx in $TitleRegex){
+		[regex]::new($rgx, [text.RegularExpressions.RegexOptions]::IgnoreCase)
+	})
+}
+
 
 ####################
 # Job payload
