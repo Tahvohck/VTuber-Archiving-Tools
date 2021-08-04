@@ -42,20 +42,20 @@ $ScriptPath = (Get-Item $PSCommandPath).Directory.Fullname
 Push-Location $ScriptPath
 
 $commFunc = gcm .\common-functions.ps1
-if ($commFunc -eq $null) {
+if ($null -eq $commFunc) {
 	Write-Host -Fore Red "Missing a required library file. Terminating."
 	return
 }
 . $commFunc
 
 $ytdl = gcm yt-dlp -ea SilentlyContinue
-if ($ytdl -eq $null -or $ForceYTDL) {
+if ($null -eq $ytdl -or $ForceYTDL) {
 	if (-not $ForceYTDL) {
 		Write-Host -Fore Cyan "Could not find YT-DLP, falling back to YT-DL"
 	}
 	$ytdl = gcm youtube-dl -ea SilentlyContinue
 }
-if ($ytdl -eq $null) {
+if ($null -eq $ytdl) {
 	Write-Host -Fore Red "YT-DL could not be found! Make sure it's on the PATH"
 	return
 }
@@ -69,7 +69,7 @@ if (!$ConfigFileInfo.Exists){
 $channels = foreach ($CID in ($ChannelIDs | Get-Unique)) {
 	$chanData = Get-APIRequest -Quiet "https://holodex.net/api/v2/channels/$CID"
 	if (!$chanData.success) {
-		if ($chanData.data.Message -ne $null) {
+		if ($null -ne $chanData.data.Message) {
 			Write-Host -Fore Red "$CID`: $($chanData.data.Message)"
 		} else {
 			Write-Host -Fore Red "$CID`: $($chanData.error.Message)"
