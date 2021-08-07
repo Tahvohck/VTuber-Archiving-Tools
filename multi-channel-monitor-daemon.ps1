@@ -145,7 +145,10 @@ $WaitAndGetVideo = {
 			Start-Sleep 121	# Well, slightly more than two minutes.
 			. $CB_UpdateVideo
 			$CheckPeriod = $true
-			if ($Video.state -eq "past") { $Finished = $true }
+			if ($Video.status -eq "past") { $Finished = $true }
+			else {
+				Write-Host "Video $($Video.ID)/$($video.channel.name) seems to have stopped early. Retrying."
+			}
 			continue
 		}
 		Start-Sleep $state.SecondsBetweenRetries
