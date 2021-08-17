@@ -87,7 +87,17 @@ $WaitAndGetVideo = {
 		[float]$MaxRecheckTime,
 		($Video.start_scheduled.ToLocalTime() - [DateTime]::Now).TotalMinutes / 2
 	)}
-	$CB_UpdateVideo = { $Video = (Get-APIRequest "https://holodex.net/api/v2/videos/$($Video.ID)").data }
+	$CB_UpdateVideo = {
+		$tmp = (Get-APIRequest "https://holodex.net/api/v2/videos/$($Video.ID)")
+		if ($tmp.success) {
+			$Video = $tmp.data
+		} else {
+			Write-Host "Error occured while updating video $($Video.ID)/$($Video.channel.name)"
+			Write-Host -Fore Red $tmp.message
+			$Video.status = $null
+		}
+		Remove-Variable tmp
+	}
 	# Local variables
 	$MaxRecheckTime = 120		# Max recheck time is 2 hours
 	$CurrentRecheckPeriod = . $CB_SetRecheckTime
@@ -128,6 +138,7 @@ $WaitAndGetVideo = {
 	Write-Host "Video $($Video.ID)/$($video.channel.name) will be starting soon."
 	$stdout = @()
 	$stderr = @()
+	$FailureCount = 0
 	Do {
 		# Run the downloader, capturing both stdout and stderr.
 		$stderr += $( $stdout += & $state.Downloader `
@@ -145,6 +156,11 @@ $WaitAndGetVideo = {
 			Start-Sleep 121	# Well, slightly more than two minutes.
 			. $CB_UpdateVideo
 			$CheckPeriod = $true
+			if ($null -eq $Video.status) {
+				$FailureCount += 1
+				if ($FailureCount -gt 3) { $Finished = $True }
+				continue
+			}
 			if ($Video.status -eq "past") { $Finished = $true }
 			else {
 				Write-Host "Video $($Video.ID)/$($video.channel.name) seems to have stopped early. Retrying."
