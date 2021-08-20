@@ -36,7 +36,7 @@ function Get-APIRequest {
 			Exception = $_.Exception
 		}
 		try {
-			$tmp.data = $tmp.error.Message | ConvertFrom-Json
+			$tmp.data = $tmp.error.Message | ConvertFrom-Json -ea Stop
 		} catch {}
 	} catch [Net.WebException] {
 		Write-Debug "REST Method complete with serious exception. Trying to reconstruct payload"
