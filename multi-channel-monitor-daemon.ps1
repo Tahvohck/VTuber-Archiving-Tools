@@ -92,8 +92,9 @@ $WaitAndGetVideo = {
 		if ($tmp.success) {
 			$Video = $tmp.data
 		} else {
-			Write-Host "Error occured while updating video $($Video.ID)/$($Video.channel.name)"
-			Write-Host -Fore Red $tmp.message
+			$EMessage = "{0:yyyy-MM-dd HH:mm}: Error occured while updating video {1}/{2}"
+			Write-Host ($EMessage -f [DateTime]::Now,$Video.Id,$Video.channel.name)
+			Write-Host -Fore Red $tmp.message.Trim()
 			$Video.status = $null
 		}
 		Remove-Variable tmp
