@@ -58,7 +58,7 @@ function Get-APIRequest {
 
 	$tmp.success = $null -eq $tmp.error
 	if (!$tmp.success -and !$Quiet) {
-		Write-Host -Fore Red $tmp.error.message
+		Write-Host -Fore Red $tmp.error.message.Trim()
 	}
 	return $tmp
 }
