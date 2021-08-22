@@ -178,6 +178,7 @@ $WaitAndGetVideo = {
 
 ####################
 # Channel checks
+Write-Notable "Checking channels for validity..."
 $channels = @(foreach ($CID in ($ChannelIDs | Get-Unique)) {
 	$chanData = Get-APIRequest -Quiet "https://holodex.net/api/v2/channels/$CID"
 	if (!$chanData.success) {
@@ -200,7 +201,11 @@ if ($channels.Length -eq 0) {
 
 ####################
 # Main loop
-Write-Host "Beginning to monitor. Press Q to quit."
+Write-Notable "Warmup done."
+Write-Notable ("Monitoring {0} channels in total." -f $channels.Length)
+Write-Notable "Checking for new videos every $MonitorWaitTime minutes"
+Write-Notable "Transferring to downloader $LeadTime minutes before video is available"
+Write-Notable "Beginning to monitor. Press Q to quit."
 $LastChannelCheckTime = [DateTime]::new(0)
 $MonitoredVideos = @{}
 $MaxMonitoredVideosBeforeCulling = $channels.Count * 4
@@ -279,6 +284,6 @@ do {
 $MonitoringJobs.Keys | Stop-Job -PassThru | Remove-Job
 
 if ($PassThru) {
-	Write-Host "User requested videos be returned"
+	Write-Notable "User requested videos be returned"
 	@($MonitoredVideos.Values.GetEnumerator())
 }
