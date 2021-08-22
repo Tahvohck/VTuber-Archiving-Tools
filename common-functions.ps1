@@ -84,6 +84,19 @@ function Write-HostWithSpacedHeader {
 
 <#
 .SYNOPSIS
+	Writes the message with a timestamp and in cyan color.
+#>
+function Write-Notable {
+	param (	[string]$message )
+	Write-Host -Fore Cyan ("[{0:yyyy-MM-dd HH:mm}] {1}" -f @(
+		[datetime]::Now.ToLocalTime(),
+		$message
+	))
+}
+
+
+<#
+.SYNOPSIS
 	Helper function that truncates a string.
 #>
 function Truncate-String {
