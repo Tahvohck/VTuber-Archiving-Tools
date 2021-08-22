@@ -92,8 +92,8 @@ $WaitAndGetVideo = {
 		if ($tmp.success) {
 			$Video = $tmp.data
 		} else {
-			$EMessage = "{0:yyyy-MM-dd HH:mm}: Error occured while updating video {1}/{2}"
-			Write-Host ($EMessage -f [DateTime]::Now,$Video.Id,$Video.channel.name)
+			$EMessage = "Error occured while updating video {0}/{1}"
+			Write-Notable ($EMessage -f $Video.Id,$Video.channel.name)
 			$Video.status = $null
 		}
 		Remove-Variable tmp
@@ -135,7 +135,7 @@ $WaitAndGetVideo = {
 	} while ($NotInLeadTime)
 
 	# Begin downloading video
-	Write-Host "Video $($Video.ID)/$($video.channel.name) will be starting soon."
+	Write-Notable "Video $($Video.ID)/$($video.channel.name) will be starting soon."
 	$stdout = @()
 	$stderr = @()
 	$FailureCount = 0
@@ -163,7 +163,7 @@ $WaitAndGetVideo = {
 			}
 			if ($Video.status -eq "past") { $Finished = $true }
 			else {
-				Write-Host "Video $($Video.ID)/$($video.channel.name) seems to have stopped early. Retrying."
+				Write-Notable "Video $($Video.ID)/$($video.channel.name) seems to have stopped early. Retrying."
 			}
 			continue
 		}
