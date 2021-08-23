@@ -147,13 +147,13 @@ $WaitAndGetVideo = {
 		) 2>&1
 		$Downloaded = $?
 		if ($Downloaded -or $CheckPeriod) {
-			# Once the downloader thinks the video is done, confirm with holodex that it's actually offline.
-			# The logic here prevents this from firing if the video hasn't started, but makes it keep checking
-			# once the video has. According to the holodex devs it checks once a minute but only gets data about
-			# once every three minutes. Wait for two minutes as a nice middle ground. Hopefully this should avoid
-			# double-downloading the same video while also avoiding missing too much of one stream if YT craps
-			# the bed like it likes to.
-			Start-Sleep 121	# Well, slightly more than two minutes.
+			# Once the downloader thinks the video is done, confirm with holodex that it's actually offline. The logic
+			# here prevents this from firing if the video hasn't started, but makes it keep checking once the video has.
+			# According to the holodex devs it checks once a minute but only gets data about once every three minutes.
+			# Wait for four minutes, as in practice the downloader has show to handle short blips of outages without
+			# any issues.
+			# TODO: Make this user-configurable.
+			Start-Sleep 240
 			. $CB_UpdateVideo
 			$CheckPeriod = $true
 			if ($null -eq $Video.status) {
