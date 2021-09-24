@@ -13,7 +13,7 @@ if (!(Test-Path $checkfile)) {
 		"hit ENTER, and the script will never ask again for this directory."
 	$UserInput = Read-Host "Do you understand"
 	if ($UserInput.ToLower() -eq "yes") {
-		New-Item -Type File $checkfile
+		New-Item -Type File $checkfile | out-null
 	} else {
 		exit
 	}
