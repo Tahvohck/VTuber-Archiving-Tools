@@ -5,6 +5,20 @@ Param(
 	[byte]$MaxThreads = 16
 )
 
+$checkfile = "SDWarnAck"
+if (!(Test-Path $checkfile)) {
+	Write-Host -Fore Red "WARNING: This script downloads files to the current directory."
+	Write-Host -Fore Red `
+		"If this is not the directory you want to be in, hit ENTER and the script will exit. If it is, type 'yes' and"`
+		"hit ENTER, and the script will never ask again for this directory."
+	$UserInput = Read-Host "Do you understand"
+	if ($UserInput.ToLower() -eq "yes") {
+		New-Item -Type File $checkfile
+	} else {
+		exit
+	}
+}
+
 # Setup
 $ScriptPath = (Get-Item $PSCommandPath).Directory.Fullname
 . "$ScriptPath/common-functions.ps1"
