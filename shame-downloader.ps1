@@ -5,6 +5,7 @@ Param(
 	[byte]$MaxThreads = 16
 )
 
+# Safety check that user understands what this will do.
 $checkfile = "SDWarnAck"
 if (!(Test-Path $checkfile)) {
 	Write-Host -Fore Red "WARNING: This script downloads files to the current directory."
