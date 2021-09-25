@@ -2,6 +2,9 @@ Param(
 	[Parameter(mandatory=$true, Position=0)]
 	[string[]]$channels,
 	[switch]$Detailed,
+	[switch]$PassThru,
+	[DateTime]$StartDate = [DateTime]::MinValue,
+	[DateTime]$EndDate = [DateTime]::MaxValue,
 	[byte]$MaxThreads = 16
 )
 
@@ -76,38 +79,60 @@ $ScriptblkLogger = {
 	}
 }
 
-
+$videos_raw = [Collections.ArrayList]::new()
 foreach($channel in $channels) {
+	$vidCount = 0
 	$videos_total = (Get-APIRequest "https://holodex.net/api/v2/channels/$channel").data.video_count
-	$videos_raw = [Collections.ArrayList]::new()
+	$channelName  = (Get-APIRequest "https://holodex.net/api/v2/channels/$channel").data.name
 	$offset = 0
 	$PageSize = 100
+
+	if ($Detailed) { Write-Host "Finding videos for $channelName" }
+
 	while ($offset -lt [Math]::ceiling($videos_total/$PageSize)) {
+		if ($Detailed) {
+			Write-Host "Downloading page $($offset + 1)/$([Math]::ceiling($videos_total/$PageSize))"
+		}
 		$tmp = Get-APIRequest "https://holodex.net/api/v2/channels/$channel/videos" -Parameters @{
 			limit = $PageSize
 			offset = $offset * $PageSize
 		}
-		$tmp.data | %{ $null = $videos_raw.Add($_) }
+		$tmp.data | %{
+			$null = $videos_raw.Add($_)
+			$vidCount += 1
+		}
 		$offset += 1
 	}
-	$videos = $videos_raw | ?{ $_.status -eq "past" }
-	$videos = $videos | Sort-Object -Unique -Property ID
-	Remove-Variable videos_raw
-
-	foreach($video in $videos) {
-		$Powershell = [powershell]::Create()
-		$Powershell.RunspacePool = $RunspacePool
-		$null = $Powershell.AddScript($ScriptblkDownloader).AddParameters(@{
-			VideoID = $video.ID
-			WorkingPath = $pwd.Path
-			Detailed = $Detailed
-			RecentVideo = ([datetime]::now - $video.published_at.ToLocalTime()).TotalDays -lt 2
-		})
-		$Jobs += $Powershell.BeginInvoke()
-
-		$ConsoleJobs += Register-ObjectEvent $Powershell.Streams.Information DataAdded -Action $ScriptblkLogger
+	# This is disabled because the standard output would confuse the end user (more videos than expected)
+	if ($Detailed -and $false) {
+		Write-Host "Found $vidCount/$videos_total"
 	}
 }
+
+# Get only videos we care about
+$videos = $videos_raw | ?{
+	$_.status -eq "past" -and
+	$_.published_at.ToLocalTime() -gt $StartDate -and
+	$_.published_at.ToLocalTime() -lt $EndDate
+}
+$videos = $videos | Sort-Object -Unique -Property ID | Sort-Object -Property published_at
+Remove-Variable videos_raw
+
+if ($PassThru) { $videos }
+foreach($video in $videos) {
+	$Powershell = [powershell]::Create()
+	$Powershell.RunspacePool = $RunspacePool
+	$null = $Powershell.AddScript($ScriptblkDownloader).AddParameters(@{
+		VideoID = $video.ID
+		WorkingPath = $pwd.Path
+		Detailed = $Detailed
+		RecentVideo = ([datetime]::now - $video.published_at.ToLocalTime()).TotalDays -lt 2
+	})
+	$Jobs += $Powershell.BeginInvoke()
+
+	$ConsoleJobs += Register-ObjectEvent $Powershell.Streams.Information DataAdded -Action $ScriptblkLogger
+}
+
 
 # Wait for all jobs to be complete
 while ($Jobs.IsCompleted -contains $false) {
