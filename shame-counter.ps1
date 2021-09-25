@@ -18,6 +18,7 @@ $donators = [Collections.ArrayList]::new()
 $FirstDonoDate = [DateTime]::MaxValue
 $LastDonoDate = [DateTime]::MinValue
 $TotalIncomeToDate = 0
+$NumberOfStreams = 0
 $ConversionREST = "https://free-currency-converter.herokuapp.com/list/convert?source={0}&destination={1}"
 $FinalCurrency = $FinalCurrency.ToUpper()
 
@@ -67,6 +68,7 @@ foreach ($log in (get-childItem *.json)) {
 		if ($donation.timestamp -gt $LastDonoDate) { $LastDonoDate = $donation.timestamp }
 		if ($donation.timestamp -lt $FirstDonoDate) { $FirstDonoDate = $donation.timestamp }
 	}
+	$NumberOfStreams += 1
 }
 
 $NumberOfDonations = $donation_list.Count
@@ -77,7 +79,7 @@ if ($NumberOfDonations -eq 0) {
 
 
 # Aggregate data
-Write-Host -Fore Cyan ("Aggregating Donations ({0:n0} total)" -f $NumberOfDonations)
+Write-Host -Fore Cyan ("Aggregating Donations ({0:n0} total, {1:n0} streams)" -f $NumberOfDonations,$NumberOfStreams)
 foreach($donation in $donation_list) {
 	$donator = "$($donation.donator)"
 
@@ -130,8 +132,9 @@ foreach($donator in ($donators | sort)) {
 Write-Host ("{0,10:n0} {1}`tTotal to date" -f $TotalIncomeToDate,$FinalCurrency)
 Write-Host ("{0,10:n2} {1}`tAverage donation" -f ($TotalIncomeToDate / $NumberOfDonations),$FinalCurrency)
 $DonoDaysRange = [Math]::Max(1, ($LastDonoDate - $FirstDonoDate).TotalDays)
-Write-Host ("{0,10:n2} {1}`tPer day" -f ($TotalIncomeToDate / $DonoDaysRange),$FinalCurrency)
-Write-Host ("{0,10:n0}`tTotal days" -f $DonoDaysRange)
+Write-Host ("{0,10:n2} {1}`tPer stream" -f ($TotalIncomeToDate / $NumberOfStreams),$FinalCurrency)
+Write-Host ("{0,10:n2} {1}`tPer day (since first dono)" -f ($TotalIncomeToDate / $DonoDaysRange),$FinalCurrency)
+Write-Host ("{0,10:n0}`tTotal days (since first dono)" -f $DonoDaysRange)
 Write-Host ("{0,10:yyyy-MM-dd}`tFirst Dono" -f $FirstDonoDate.Date)
 Write-Host ("{0,10:yyyy-MM-dd}`tLast Dono" -f $LastDonoDate.Date)
 
