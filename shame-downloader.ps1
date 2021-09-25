@@ -136,6 +136,16 @@ foreach($video in $videos) {
 
 # Wait for all jobs to be complete
 while ($Jobs.IsCompleted -contains $false) {
+	if ([Console]::KeyAvailable) {
+		$key = [Console]::ReadKey($true)
+		$UserQuit = $key.key -eq "Q"
+		if ($UserQuit) {
+			Write-Host "Exiting..."
+			$RunspacePool.Close()
+			$RunspacePool.Dispose()
+			continue
+		}
+	}
 	Start-sleep 1
 }
 
