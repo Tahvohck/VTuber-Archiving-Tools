@@ -85,7 +85,7 @@ foreach($channel in $channels) {
 	while ($offset -lt [Math]::ceiling($videos_total/$PageSize)) {
 		$tmp = Get-APIRequest "https://holodex.net/api/v2/channels/$channel/videos" -Parameters @{
 			limit = $PageSize
-			offset = $offset
+			offset = $offset * $PageSize
 		}
 		$tmp.data | %{ $null = $videos_raw.Add($_) }
 		$offset += 1
