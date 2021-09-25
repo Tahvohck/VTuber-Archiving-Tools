@@ -103,7 +103,7 @@ foreach($donation in $donation_list) {
 }
 
 Write-Host -Fore Cyan "Doing conversions to $FinalCurrency"
-foreach($donator in ($donators | sort)) {
+foreach($donator in ($donators | sort -unique)) {
 	if (!($donator -in $AggregateDonations.Keys)) { continue }
 	$donator_stats = $AggregateDonations[$donator]
 	foreach($currency in @($donator_stats.money.Keys)) {
