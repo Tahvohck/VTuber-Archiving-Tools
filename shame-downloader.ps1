@@ -62,6 +62,7 @@ $ScriptblkDownloader = {
 	# Download to temporary file, then minify
 	& $python -m chat_downloader -q `
 		--message_type paid_message,paid_sticker `
+		--inactivity_timeout 300 `
 		-o "$filename" "youtu.be/$VideoID"
 
 	if ((Test-Path "$filename") -and ((gi $filename).length -ne 0)) {
