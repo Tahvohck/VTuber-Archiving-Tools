@@ -6,7 +6,7 @@ Param(
 	[switch]$UsePyPy,
 	[DateTime]$StartDate = [DateTime]::MinValue,
 	[DateTime]$EndDate = [DateTime]::MaxValue,
-	[byte]$MaxThreads = 16
+	[byte]$MaxThreads = 8
 )
 
 # Safety check that user understands what this will do.
