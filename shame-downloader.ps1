@@ -96,7 +96,7 @@ $ScriptblkLogger = {
 $videos_raw = [Collections.ArrayList]::new()
 foreach($channel in $channels) {
 	$vidCount = 0
-	$videos_total = (Get-APIRequest "https://holodex.net/api/v2/channels/$channel").data.video_count
+	$videos_total = (Get-APIRequest "https://holodex.net/api/v2/channels/$channel/videos" -Parameters @{paginated = $true; limit=0}).data.total
 	$channelName  = (Get-APIRequest "https://holodex.net/api/v2/channels/$channel").data.name
 	$offset = 0
 	$PageSize = 100
@@ -117,8 +117,7 @@ foreach($channel in $channels) {
 		}
 		$offset += 1
 	}
-	# This is disabled because the standard output would confuse the end user (more videos than expected)
-	if ($Detailed -and $false) {
+	if ($Detailed) {
 		Write-Host "Found $vidCount/$videos_total"
 	}
 }
