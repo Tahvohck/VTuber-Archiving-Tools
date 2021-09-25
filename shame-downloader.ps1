@@ -3,6 +3,7 @@ Param(
 	[string[]]$channels,
 	[switch]$Detailed,
 	[switch]$PassThru,
+	[switch]$UsePyPy,
 	[DateTime]$StartDate = [DateTime]::MinValue,
 	[DateTime]$EndDate = [DateTime]::MaxValue,
 	[byte]$MaxThreads = 16
@@ -31,11 +32,23 @@ $RunspacePool.Open()
 $Jobs = @()
 $ConsoleJobs = @()
 
+if ($UsePyPy) {
+	$python = get-command pypy3 -ea SilentlyContinue
+} else {
+	$python = get-command python -ea SilentlyContinue
+}
+if ($null -eq $python) {
+	Write-Host -Fore Red "Unable to find python. Make sure Python is installed and on the PATH"
+	Write-Host -Fore Red "In addition, make sure the chat-downloader module is installed."
+	exit
+}
+
 
 $ScriptblkDownloader = {
 	param(
 		$VideoID,
 		$WorkingPath,
+		$python,
 		[switch]$RecentVideo,
 		[switch]$Detailed
 	)
@@ -47,13 +60,13 @@ $ScriptblkDownloader = {
 	}
 
 	# Download to temporary file, then minify
-	python -m chat_downloader -q `
+	& $python -m chat_downloader -q `
 		--message_type paid_message,paid_sticker `
 		-o "$filename" "youtu.be/$VideoID"
 
 	if ((Test-Path "$filename") -and ((gi $filename).length -ne 0)) {
 		mv $filename "$VideoID.tmp"
-		gc "$VideoID.tmp" | python -c 'import json, sys;json.dump(json.load(sys.stdin), sys.stdout)' | Out-File "$filename"
+		gc "$VideoID.tmp" | & $python -c 'import json, sys;json.dump(json.load(sys.stdin), sys.stdout)' | Out-File "$filename"
 		rm "$VideoID.tmp"
 	} else {
 		if (!$RecentVideo) { Write-Output "[]" | Out-File "$filename" }
@@ -127,6 +140,7 @@ foreach($video in $videos) {
 		WorkingPath = $pwd.Path
 		Detailed = $Detailed
 		RecentVideo = ([datetime]::now - $video.published_at.ToLocalTime()).TotalDays -lt 2
+		python = $python
 	})
 	$Jobs += $Powershell.BeginInvoke()
 
