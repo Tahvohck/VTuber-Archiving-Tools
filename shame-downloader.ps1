@@ -31,6 +31,7 @@ $RunspacePool = [runspacefactory]::CreateRunspacePool(1, $MaxThreads)
 $RunspacePool.Open()
 $Jobs = @()
 $ConsoleJobs = @()
+$Holodex = "https://holodex.net/api/v2"
 
 if ($UsePyPy) {
 	$python = get-command pypy3 -ea SilentlyContinue
@@ -94,10 +95,14 @@ $ScriptblkLogger = {
 }
 
 $videos_raw = [Collections.ArrayList]::new()
+$videosTotalParam = @{
+	paginated = $true
+	limit = 0
+}
 foreach($channel in $channels) {
 	$vidCount = 0
-	$videos_total = (Get-APIRequest "https://holodex.net/api/v2/channels/$channel/videos" -Parameters @{paginated = $true; limit=0}).data.total
-	$channelName  = (Get-APIRequest "https://holodex.net/api/v2/channels/$channel").data.name
+	$videos_total = (Get-APIRequest "$holodex/channels/$channel/videos" -Parameters $videosTotalParam).data.total
+	$channelName  = (Get-APIRequest "$holodex/channels/$channel").data.name
 	$offset = 0
 	$PageSize = 100
 
@@ -107,7 +112,7 @@ foreach($channel in $channels) {
 		if ($Detailed) {
 			Write-Host "Downloading page $($offset + 1)/$([Math]::ceiling($videos_total/$PageSize))"
 		}
-		$tmp = Get-APIRequest "https://holodex.net/api/v2/channels/$channel/videos" -Parameters @{
+		$tmp = Get-APIRequest "$holodex/channels/$channel/videos" -Parameters @{
 			limit = $PageSize
 			offset = $offset * $PageSize
 		}
