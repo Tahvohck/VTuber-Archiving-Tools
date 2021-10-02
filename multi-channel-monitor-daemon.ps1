@@ -267,6 +267,7 @@ do {
 
 		Write-Debug "Found $($videoList.Count) new video(s) for channel $($channel.name)"
 		foreach ($videoData in $videoList) {
+			$videoData.start_scheduled = [DateTime]$videoData.start_scheduled
 			$MonitoredVideos[$videoData.id] = $videoData
 			Write-Debug "Inserted video: $($videoData.id)"
 			Write-HostWithSpacedHeader $videoData.id (Truncate-String $videoData.Title ([Console]::WindowWidth - 30))
