@@ -42,6 +42,7 @@ $state = @{
 	SecondsBetweenRetries = $SecondsBetweenRetries
 	Downloader = $null
 	ConfigFileInfo = $null
+	CommonFunctions = $null
 }
 
 $commFunc = gcm .\common-functions.ps1
@@ -50,6 +51,7 @@ if ($null -eq $commFunc) {
 	return
 }
 . $commFunc
+$state.CommonFunctions = $commFunc
 
 $ytdl = gcm yt-dlp -ea SilentlyContinue
 if ($null -eq $ytdl -or $ForceYTDL) {
@@ -82,6 +84,7 @@ if ($null -ne $TitleRegex){
 # Job payload
 $WaitAndGetVideo = {
 	param($state, $Video)
+	. $state.CommonFunctions
 	# Reusable code blocks
 	$CB_SetRecheckTime = { [Math]::Min(
 		[float]$MaxRecheckTime,
@@ -275,7 +278,6 @@ do {
 
 			$Job = Start-Job $WaitAndGetVideo `
 				-ArgumentList $state,$videoData `
-				-InitializationScript {. .\common-functions.ps1} `
 				-Name "$($channel.english_name)_$($videoData.id)"
 			$MonitoringJobs[$Job] = $videoData.id
 		}
