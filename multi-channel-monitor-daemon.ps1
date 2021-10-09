@@ -24,8 +24,10 @@ param(
 	# When actively checking if the video is live, the time in seconds to wait between checks.
 	[int]$SecondsBetweenRetries = 15,
 
-	# An alternate youtube-dl config file to use. Must be a relative path.
+	# An alternate youtube-dl config file to use.
 	[string]$ConfigPath = "default.cfg",
+	# Where to put the downloaded files.
+	[string]$OutputPath = ".",
 	# If both youtube-dl and YT-DLP are installed, force the use of youtube-dl.
 	[Switch]$ForceYTDL,
 	# When quitting, return any currently monitored videos to the pipeline.
@@ -43,6 +45,7 @@ $state = @{
 	Downloader = $null
 	ConfigFileInfo = $null
 	CommonFunctions = $null
+	OutputLocation = $null
 }
 
 $commFunc = Get-Command .\common-functions.ps1
@@ -66,12 +69,19 @@ if ($null -eq $ytdl) {
 }
 $state.Downloader = $ytdl
 
-$ConfigFileInfo = [IO.FileInfo][IO.Path]::Combine($pwd, $ConfigPath)
+$ConfigFileInfo = [IO.FileInfo][IO.Path]::GetFullPath($ConfigPath).Normalize()
 if (!$ConfigFileInfo.Exists){
 	Write-Host -Fore Red "Couldn't find YT-DL config file $ConfigFileInfo"
 	return
 }
 $state.ConfigFileInfo = $ConfigFileInfo
+
+$OutputPathInfo = [IO.DirectoryInfo][IO.Path]::GetFullPath($OutputPath).Normalize()
+if (!$OutputPathInfo.Exists){
+	Write-Host -Fore Red "Output path [$OutputPathInfo] doesn't exist. Making it."
+	New-Item -ItemType Directory $OutputPathInfo | Out-Null
+}
+$state.OutputLocation = $OutputPathInfo
 
 if ($null -ne $TitleRegex){
 	$TitleRegex = @( foreach($rgx in $TitleRegex){
@@ -85,6 +95,7 @@ if ($null -ne $TitleRegex){
 $WaitAndGetVideo = {
 	param($state, $Video)
 	. $state.CommonFunctions.Source
+	Set-Location $state.OutputLocation
 	# Reusable code blocks
 	$CB_SetRecheckTime = { [Math]::Min(
 		[float]$MaxRecheckTime,
@@ -208,6 +219,7 @@ Write-Notable "Warmup done."
 Write-Notable ("Monitoring {0} channels in total." -f $channels.Length)
 Write-Notable "Checking for new videos every $MonitorWaitTime minutes"
 Write-Notable "Transferring to downloader $LeadTime minutes before video is available"
+Write-Notable "Output location: $($state.OutputLocation)"
 Write-Notable "Beginning to monitor. Press Q to quit."
 $LastChannelCheckTime = [DateTime]::new(0)
 $MonitoredVideos = @{}
