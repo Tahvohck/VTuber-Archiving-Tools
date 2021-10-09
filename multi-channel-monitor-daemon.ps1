@@ -84,7 +84,7 @@ if ($null -ne $TitleRegex){
 # Job payload
 $WaitAndGetVideo = {
 	param($state, $Video)
-	. $state.CommonFunctions
+	. $state.CommonFunctions.Source
 	# Reusable code blocks
 	$CB_SetRecheckTime = { [Math]::Min(
 		[float]$MaxRecheckTime,
