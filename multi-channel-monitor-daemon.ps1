@@ -45,7 +45,7 @@ $state = @{
 	CommonFunctions = $null
 }
 
-$commFunc = gcm .\common-functions.ps1
+$commFunc = Get-Command .\common-functions.ps1
 if ($null -eq $commFunc) {
 	Write-Host -Fore Red "Missing a required library file. Terminating."
 	return
@@ -53,12 +53,12 @@ if ($null -eq $commFunc) {
 . $commFunc
 $state.CommonFunctions = $commFunc
 
-$ytdl = gcm yt-dlp -ea SilentlyContinue
+$ytdl = Get-Command yt-dlp -ea SilentlyContinue
 if ($null -eq $ytdl -or $ForceYTDL) {
 	if (-not $ForceYTDL) {
 		Write-Host -Fore Cyan "Could not find YT-DLP, falling back to YT-DL"
 	}
-	$ytdl = gcm youtube-dl -ea SilentlyContinue
+	$ytdl = Get-Command youtube-dl -ea SilentlyContinue
 }
 if ($null -eq $ytdl) {
 	Write-Host -Fore Red "YT-DL could not be found! Make sure it's on the PATH"
