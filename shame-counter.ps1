@@ -1,6 +1,8 @@
 Param(
 	$FinalCurrency = "JPY",
 	[switch]$ShowTopDonators,
+	[switch]$Anonymize,
+	[switch]$HideTopAmounts,
 	[DateTime]$StartDate = [DateTime]::MinValue,
 	[DateTime]$EndDate = [DateTime]::MaxValue,
 	[switch]$TestConversion,
@@ -141,15 +143,28 @@ Write-Host ("{0,10:yyyy-MM-dd}`tFirst Dono" -f $FirstDonoDate.Date)
 Write-Host ("{0,10:yyyy-MM-dd}`tLast Dono" -f $LastDonoDate.Date)
 
 if ($ShowTopDonators) {
+	$ShowHowMany = 5
+	if ($Anonymize) {
+		$DonatorFormat = "Hidden"
+	} else {
+		$DonatorFormat = "{2}"
+	}
+	if ($HideTopAmounts) {
+		$AllTimeAmountFormat = " " * 6 + "???? {1}"
+		$AverageAmountFormat = " " * 6 + "???? {1}"
+	} else {
+		$AllTimeAmountFormat = "{0,10:n0} {1}"
+		$AverageAmountFormat = "{0,10:n2} {1}"
+	}
 	Write-Host -Fore Cyan "Top Donators (All-Time):"
-	$AggregateDonations.GetEnumerator() | Sort {$_.Value.TOTAL} -Descending | Select -First 5 | %{
-		Write-Host ("{0,10:n0} {1}`t{2}" -f $_.Value.TOTAL,$FinalCurrency,$_.Key)
+	$AggregateDonations.GetEnumerator() | Sort {$_.Value.TOTAL} -Descending | Select -First $ShowHowMany | %{
+		Write-Host ("$AllTimeAmountFormat`t$DonatorFormat" -f $_.Value.TOTAL,$FinalCurrency,$_.Key)
 	}
 	Write-Host -Fore Cyan "Top Donators (Average per donation, more than 10 donos):"
-	$AggregateDonations.GetEnumerator() | Sort {[int]$_.Value.average} -Descending | Where-Object {
+	$AggregateDonations.GetEnumerator() | Sort {[float]$_.Value.average} -Descending | Where-Object {
 		$_.Value.donations -gt 10
-	} | Select -First 5 | %{
-		Write-Host ("{0,10:n2} {1}`t{2}" -f $_.Value.average,$FinalCurrency,$_.Key)
+	} | Select -First $ShowHowMany | %{
+		Write-Host ("$AverageAmountFormat`t$DonatorFormat" -f $_.Value.average,$FinalCurrency,$_.Key)
 	}
 }
 if ($PassThru) {
