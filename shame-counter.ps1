@@ -56,6 +56,8 @@ foreach ($log in (get-childItem *.json)) {
 			$donator = "Pang/John"
 		} elseif ($donator -like "*LC_Lapen*") {
 			$donator = "LC_Lapen"
+		} elseif ($donator -like "*Meateor*") {
+			$donator = "Meateor"
 		}
 		$donation.donator = $donator
 
