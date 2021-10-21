@@ -145,9 +145,11 @@ if ($ShowTopDonators) {
 	$AggregateDonations.GetEnumerator() | Sort {$_.Value.TOTAL} -Descending | Select -First 5 | %{
 		Write-Host ("{0,10:n0} {1}`t{2}" -f $_.Value.TOTAL,$FinalCurrency,$_.Key)
 	}
-	Write-Host -Fore Cyan "Top Donators (Daily average):"
-	$AggregateDonations.GetEnumerator() | Sort {$_.Value.PerDay} -Descending | Select -First 5 | %{
-		Write-Host ("{0,10:n2} {1}`t{2}" -f $_.Value.PerDay,$FinalCurrency,$_.Key)
+	Write-Host -Fore Cyan "Top Donators (Average per donation, more than 10 donos):"
+	$AggregateDonations.GetEnumerator() | Sort {[int]$_.Value.average} -Descending | Where-Object {
+		$_.Value.donations -gt 10
+	} | Select -First 5 | %{
+		Write-Host ("{0,10:n2} {1}`t{2}" -f $_.Value.average,$FinalCurrency,$_.Key)
 	}
 }
 if ($PassThru) {
