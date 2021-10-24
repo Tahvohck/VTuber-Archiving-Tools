@@ -69,14 +69,26 @@ if ($null -eq $ytdl) {
 }
 $state.Downloader = $ytdl
 
-$ConfigFileInfo = [IO.FileInfo][IO.Path]::GetFullPath($ConfigPath).Normalize()
+# Do some complex bullshit just to get FQ and normalized URLs
+$ConfigFileInfo = if ([IO.Path]::IsPathRooted($ConfigPath)) {
+	[IO.FileInfo][IO.Path]::GetFullPath($ConfigPath).Normalize()
+} else {
+	$ConfigPath = [string]::Join([IO.path]::DirectorySeparatorChar, $pwd, $ConfigPath)
+	[IO.FileInfo][IO.Path]::GetFullPath($ConfigPath).Normalize()
+}
 if (!$ConfigFileInfo.Exists){
 	Write-Host -Fore Red "Couldn't find YT-DL config file $ConfigFileInfo"
 	return
 }
 $state.ConfigFileInfo = $ConfigFileInfo
 
-$OutputPathInfo = [IO.DirectoryInfo][IO.Path]::GetFullPath($OutputPath).Normalize()
+# Same as above, do some complex bullshit just to get FQ and normalized URLs
+$OutputPathInfo = if ([IO.Path]::IsPathRooted($OutputPath)) {
+	[IO.DirectoryInfo][IO.Path]::GetFullPath($OutputPath).Normalize()
+} else {
+	$OutputPath = [string]::Join([IO.path]::DirectorySeparatorChar, $pwd, $OutputPath)
+	[IO.DirectoryInfo][IO.Path]::GetFullPath($OutputPath).Normalize()
+}
 if (!$OutputPathInfo.Exists){
 	Write-Host -Fore Red "Output path [$OutputPathInfo] doesn't exist. Making it."
 	New-Item -ItemType Directory $OutputPathInfo | Out-Null
@@ -220,6 +232,7 @@ Write-Notable ("Monitoring {0} channels in total." -f $channels.Length)
 Write-Notable "Checking for new videos every $MonitorWaitTime minutes"
 Write-Notable "Transferring to downloader $LeadTime minutes before video is available"
 Write-Notable "Output location: $($state.OutputLocation)"
+Write-Notable "Downloader program config file: $($state.ConfigFileInfo)"
 Write-Notable "Beginning to monitor. Press Q to quit."
 $LastChannelCheckTime = [DateTime]::new(0)
 $MonitoredVideos = @{}
