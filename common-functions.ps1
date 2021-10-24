@@ -16,6 +16,10 @@ function Get-APIRequest {
 		error = $null
 	}
 
+	if (!("Net.Http.HttpRequestException" -as [type])){
+		Add-Type -AssemblyName "*Net.Http"
+	}
+
 	try {
 		if ($Parameters -ne $null) {
 			$URIParamArray = [Collections.ArrayList]::new()
