@@ -75,6 +75,7 @@ $ScriptblkDownloader = {
 			'time_in_seconds'
 			'action_type'
 			'emotes'
+			'sticker_images'
 			'message'
 		)
 		$filtered = $json | Select * -ExcludeProperty $RemovePropList | %{
