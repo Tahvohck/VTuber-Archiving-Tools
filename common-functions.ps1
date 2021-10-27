@@ -31,7 +31,7 @@ function Get-APIRequest {
 			Write-Debug "Param string is: $PString"
 		}
 		Write-Debug "Calling REST Method"
-		$tmp.data = Invoke-RestMethod -ea Stop ($URI + $PString)
+		$tmp.data = Invoke-RestMethod -TimeoutSec 10 -ea Stop ($URI + $PString)
 	} catch [Net.Http.HttpRequestException] {
 		Write-Debug "REST Method complete with exception"
 		$tmp.error = [PSCustomObject]@{
