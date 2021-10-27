@@ -5,6 +5,8 @@ Param(
 	[switch]$HideTopAmounts,
 	[DateTime]$StartDate = [DateTime]::MinValue,
 	[DateTime]$EndDate = [DateTime]::MaxValue,
+	[ValidateRange(0,1)]
+	[float]$EstimatedCompanyCut = -1,
 	[switch]$TestConversion,
 	[switch]$PassThru
 )
@@ -157,7 +159,16 @@ $DonoDaysRange = [Math]::Max(1, ($LastDonoDate - $FirstDonoDate).TotalDays)
 Write-Host ("{0,10:n2} {1}`tPer stream" -f ($TotalIncomeToDate / $NumberOfStreams),$FinalCurrency)
 Write-Host ("{0,10:n2} {1}`tPer monetized stream" -f ($TotalIncomeToDate / $NumberOfMonetizedStreams),$FinalCurrency)
 Write-Host ("{0,10:n2} {1}`tPer day (since first dono)" -f ($TotalIncomeToDate / $DonoDaysRange),$FinalCurrency)
+if ($EstimatedCompanyCut -ne -1) {
+	$daily = ($TotalIncomeToDate / $DonoDaysRange)
+	$lessYT = $daily * (1 - 0.3)
+	$lessCompany = $lessYT * (1 - $EstimatedCompanyCut)
+	$hourly = $lessCompany * 7 / 40
+	Write-Host ("{0,10:n2} {1}`tEstimated hourly pay (less YT cut and company cut)" -f $hourly,$FinalCurrency)
+}
 Write-Host ("{0,10:n0}`tTotal days (since first dono)" -f $DonoDaysRange)
+Write-Host ("{0,10:n0}`tUnique Donators" -f $donators.Length)
+Write-Host ("{0,10:n2}`tAverage donations per donator" -f ($NumberOfDonations / $donators.Length))
 Write-Host ("{0,10:yyyy-MM-dd}`tFirst Dono" -f $FirstDonoDate.Date)
 Write-Host ("{0,10:yyyy-MM-dd}`tLast Dono" -f $LastDonoDate.Date)
 
