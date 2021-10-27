@@ -166,11 +166,11 @@ if ($EstimatedCompanyCut -ne -1) {
 	$hourly = $lessCompany * 7 / 40
 	Write-Host ("{0,10:n2} {1}`tEstimated hourly pay (less YT cut and company cut)" -f $hourly,$FinalCurrency)
 }
-Write-Host ("{0,10:n0}`tTotal days (since first dono)" -f $DonoDaysRange)
 Write-Host ("{0,10:n0}`tUnique Donators" -f $donators.Length)
 Write-Host ("{0,10:n2}`tAverage donations per donator" -f ($NumberOfDonations / $donators.Length))
 Write-Host ("{0,10:yyyy-MM-dd}`tFirst Dono" -f $FirstDonoDate.Date)
 Write-Host ("{0,10:yyyy-MM-dd}`tLast Dono" -f $LastDonoDate.Date)
+Write-Host ("{0,10:n0}`tTotal days (since first dono)" -f $DonoDaysRange)
 
 if ($ShowTopDonators) {
 	$ShowHowMany = 5
