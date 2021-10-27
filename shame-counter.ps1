@@ -36,7 +36,9 @@ if (!$ConversionsRaw.success) {
 	}
 }
 
-
+# Set up and start stopwatch
+$StopWatch = [Diagnostics.StopWatch]::New()
+$StopWatch.Start()
 # Read data files
 Write-Host -Fore Cyan "Reading Donations"
 foreach ($log in (get-childItem *.json)) {
@@ -138,7 +140,10 @@ foreach($donator in ($donators | sort -unique)) {
 	$AggregateDonations[$donator] = [pscustomobject]$donator_stats
 }
 
+# Stop Stopwatch
+$StopWatch.Stop()
 # Display final info
+Write-Host ("{0,10:mm\:ss} M:S`tTime taken to process data" -f $StopWatch.Elapsed)
 Write-Host ("{0,10:n0} {1}`tTotal to date" -f $TotalIncomeToDate,$FinalCurrency)
 Write-Host ("{0,10:n2} {1}`tAverage donation" -f ($TotalIncomeToDate / $NumberOfDonations),$FinalCurrency)
 $DonoDaysRange = [Math]::Max(1, ($LastDonoDate - $FirstDonoDate).TotalDays)
