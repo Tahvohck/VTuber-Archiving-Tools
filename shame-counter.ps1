@@ -173,6 +173,12 @@ if ($ShowTopDonators) {
 	} | Select -First $ShowHowMany | %{
 		Write-Host ("$AverageAmountFormat`t$DonatorFormat" -f $_.Value.average,$FinalCurrency,$_.Key)
 	}
+	Write-Host -Fore Cyan "Top Donators (Personal average 'per day', more than 10 donos):"
+	$AggregateDonations.GetEnumerator() | Sort {$_.Value.PerDay} -Descending | Where-Object {
+		$_.Value.donations -gt 10
+	} | Select -First $ShowHowMany | %{
+		Write-Host ("$AverageAmountFormat`t$DonatorFormat" -f $_.Value.PerDay,$FinalCurrency,$_.Key)
+	}
 }
 if ($PassThru) {
 	$AggregateDonations
