@@ -114,9 +114,11 @@ foreach($donation in $donation_list) {
 	}
 }
 
+Write-Host -Fore Cyan "Eliminating duplicate data that crept in"
+$ADK = $AggregateDonations.Keys
+$donators = $donators | sort -unique | ?{ $_ -in $ADK }
 Write-Host -Fore Cyan "Doing conversions to $FinalCurrency"
-foreach($donator in ($donators | sort -unique)) {
-	if (!($donator -in $AggregateDonations.Keys)) { continue }
+foreach($donator in $donators) {
 	$donator_stats = $AggregateDonations[$donator]
 	foreach($currency in @($donator_stats.money.Keys)) {
 		if ($currency -eq $FinalCurrency) {
@@ -132,11 +134,16 @@ foreach($donator in ($donators | sort -unique)) {
 			}
 		}
 		$donator_stats["TOTAL"] += [Math]::Round($yen, 3)
-		$donator_stats["average"] = "{0:n2}" -f ($donator_stats["TOTAL"] / $donator_stats["donations"])
-		$days = [Math]::Max(1, ($donator_stats["last"].Date -  $donator_stats["earliest"].Date).TotalDays)
-		$donator_stats["PerDay"] = [Math]::Round($donator_stats["TOTAL"] / $days, 3)
 		$TotalIncomeToDate += $yen
 	}
+}
+
+Write-Host -Fore Cyan "Gathering metrics"
+foreach($donator in $donators) {
+	$donator_stats = $AggregateDonations[$donator]
+	$donator_stats["average"] = "{0:n2}" -f ($donator_stats["TOTAL"] / $donator_stats["donations"])
+	$days = [Math]::Max(1, ($donator_stats["last"].Date -  $donator_stats["earliest"].Date).TotalDays)
+	$donator_stats["PerDay"] = [Math]::Round($donator_stats["TOTAL"] / $days, 3)
 	$AggregateDonations[$donator] = [pscustomobject]$donator_stats
 }
 
