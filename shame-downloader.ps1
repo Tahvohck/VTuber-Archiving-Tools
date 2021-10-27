@@ -68,7 +68,21 @@ $ScriptblkDownloader = {
 
 	if ((Test-Path "$filename") -and ((gi $filename).length -ne 0)) {
 		mv $filename "$VideoID.tmp"
-		gc "$VideoID.tmp" | & $python -c 'import json, sys;json.dump(json.load(sys.stdin), sys.stdout)' | Out-File "$filename"
+		$json = gc "$VideoID.tmp" | ConvertFrom-Json
+		$RemovePropList = @(
+			'*_colour'
+			'time_text'
+			'time_in_seconds'
+			'action_type'
+			'emotes'
+			'message'
+		)
+		$filtered = $json | Select * -ExcludeProperty $RemovePropList | %{
+			$_.author = ($_.author | select * -ExcludeProperty images,*colour)
+			$_.money = ($_.money | select amount,currency)
+			$_
+		}
+		$filtered | ConvertTo-Json -Depth 10 -Compress | Out-File "$filename"
 		rm "$VideoID.tmp"
 	} else {
 		if (!$RecentVideo) { Write-Output "[]" | Out-File "$filename" }
