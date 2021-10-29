@@ -1,6 +1,7 @@
 Param(
 	$FinalCurrency = "JPY",
 	[switch]$ShowTopDonators,
+	[switch]$ShowTopCurrencies,
 	[switch]$Anonymize,
 	[switch]$HideTopAmounts,
 	[DateTime]$StartDate = [DateTime]::MinValue,
@@ -16,6 +17,7 @@ $ScriptPath = (Get-Item $PSCommandPath).Directory.Fullname
 # Globals
 $Conversions = @{}
 $AggregateDonations = @{}
+$AggregateCurrencies = @{}
 $donation_list = [Collections.ArrayList]::new() 
 $donators = [Collections.ArrayList]::new()
 
@@ -56,6 +58,16 @@ foreach ($log in (get-childItem *.json)) {
 		}
 		
 		if ($donation.timestamp -lt $StartDate -or $donation.timestamp -gt $EndDate) { continue }
+		if ($ShowTopCurrencies) {
+			if ($donation.currency -notin $AggregateCurrencies.Keys) {
+				$AggregateCurrencies[$donation.currency] = [pscustomobject]@{
+					count = 1
+					amount = 0
+				}
+			} else {
+				$AggregateCurrencies[$donation.currency].count += 1
+			}
+		}
 
 		# Do some fixups here for known alts
 		$donator = "$($donation.donator)"
@@ -137,6 +149,9 @@ foreach($donator in $donators) {
 		}
 		$donator_stats["TOTAL"] += [Math]::Round($yen, 3)
 		$TotalIncomeToDate += $yen
+		if ($ShowTopCurrencies) {
+			$AggregateCurrencies[$currency].amount += $yen
+		}
 	}
 }
 
@@ -171,6 +186,20 @@ Write-Host ("{0,10:n2}`tAverage donations per donator" -f ($NumberOfDonations / 
 Write-Host ("{0,10:yyyy-MM-dd}`tFirst Dono" -f $FirstDonoDate.Date)
 Write-Host ("{0,10:yyyy-MM-dd}`tLast Dono" -f $LastDonoDate.Date)
 Write-Host ("{0,10:n0}`tTotal days (since first dono)" -f $DonoDaysRange)
+
+if ($ShowTopCurrencies) {
+	$ShowHowMany = 5
+	Write-Host -Fore Cyan "Top Currencies (By count):"
+	$AggregateCurrencies.GetEnumerator() | Sort {$_.Value.count} -Descending | Select -First $ShowHowMany | %{
+		$PercentOfDonos = $_.Value.count / $NumberOfDonations * 100
+		Write-Host ("{0,10:n3} %`t{1}" -f $PercentOfDonos,$_.Key)
+	}
+	Write-Host -Fore Cyan "Top Currencies (By amount):"
+	$AggregateCurrencies.GetEnumerator() | Sort {$_.Value.amount} -Descending | Select -First $ShowHowMany | %{
+		$PercentOfDonos = $_.Value.amount / $TotalIncomeToDate * 100
+		Write-Host ("{0,10:n3} %`t{1}" -f $PercentOfDonos,$_.Key)
+	}
+}
 
 if ($ShowTopDonators) {
 	$ShowHowMany = 5
