@@ -4,6 +4,8 @@ Param(
 	[switch]$ShowTopCurrencies,
 	[switch]$Anonymize,
 	[switch]$HideTopAmounts,
+	[ValidateRange(1, [Int]::MaxValue)]
+	[int]$RegularDonatorThreshold = 10,
 	[DateTime]$StartDate = [DateTime]::MinValue,
 	[DateTime]$EndDate = [DateTime]::MaxValue,
 	[ValidateRange(0,1)]
@@ -20,6 +22,7 @@ $AggregateDonations = @{}
 $AggregateCurrencies = @{}
 $donation_list = [Collections.ArrayList]::new() 
 $donators = [Collections.ArrayList]::new()
+$regularDonators = [Collections.ArrayList]::new()
 
 $FirstDonoDate = [DateTime]::MaxValue
 $LastDonoDate = [DateTime]::MinValue
@@ -162,6 +165,10 @@ foreach($donator in $donators) {
 	$days = [Math]::Max(1, ($donator_stats["last"].Date -  $donator_stats["earliest"].Date).TotalDays)
 	$donator_stats["PerDay"] = [Math]::Round($donator_stats["TOTAL"] / $days, 3)
 	$AggregateDonations[$donator] = [pscustomobject]$donator_stats
+	if ($AggregateDonations[$donator].donations -ge $RegularDonatorThreshold) {
+		# Don't need to do a presence check since we already filtered donators to uniques
+		$regularDonators.Add($donator) | Out-Null
+	}
 }
 
 # Stop Stopwatch
@@ -181,7 +188,8 @@ if ($EstimatedCompanyCut -ne -1) {
 	$hourly = $lessCompany * 7 / 40
 	Write-Host ("{0,10:n2} {1}`tEstimated hourly pay (less YT cut and company cut)" -f $hourly,$FinalCurrency)
 }
-Write-Host ("{0,10:n0}`tUnique Donators" -f $donators.Length)
+Write-Host ("{0,10:n0}`tUnique Donators" -f $donators.Count)
+Write-Host ("{0,10:n0}`tUnique Regular Donators (more than {1} donos)" -f ($regularDonators.Count,$RegularDonatorThreshold))
 Write-Host ("{0,10:n2}`tAverage donations per donator" -f ($NumberOfDonations / $donators.Length))
 Write-Host ("{0,10:yyyy-MM-dd}`tFirst Dono" -f $FirstDonoDate.Date)
 Write-Host ("{0,10:yyyy-MM-dd}`tLast Dono" -f $LastDonoDate.Date)
