@@ -163,7 +163,8 @@ foreach($donator in $donators) {
 	$donator_stats = $AggregateDonations[$donator]
 	$donator_stats["average"] = "{0:n2}" -f ($donator_stats["TOTAL"] / $donator_stats["donations"])
 	$days = [Math]::Max(1, ($donator_stats["last"].Date -  $donator_stats["earliest"].Date).TotalDays)
-	$donator_stats["PerDay"] = [Math]::Round($donator_stats["TOTAL"] / $days, 3)
+	$donator_stats["PerDayAmount"] = [Math]::Round($donator_stats["TOTAL"] / $days, 3)
+	$donator_stats["PerDayCount"] = [Math]::Round($donator_stats["donations"] / $days, 3)
 	$AggregateDonations[$donator] = [pscustomobject]$donator_stats
 	if ($AggregateDonations[$donator].donations -ge $RegularDonatorThreshold) {
 		# Don't need to do a presence check since we already filtered donators to uniques
@@ -234,10 +235,10 @@ if ($ShowTopDonators) {
 		Write-Host ("$AverageAmountFormat`t$DonatorFormat" -f $_.Value.average,$FinalCurrency,$_.Key)
 	}
 	Write-Host -Fore Cyan "Top Donators (Personal average 'per day', more than $RegularDonatorThreshold donos):"
-	$AggregateDonations.GetEnumerator() | Sort {$_.Value.PerDay} -Descending | Where-Object {
+	$AggregateDonations.GetEnumerator() | Sort {$_.Value.PerDayAmount} -Descending | Where-Object {
 		$_.Value.donations -gt $RegularDonatorThreshold
 	} | Select -First $ShowHowMany | %{
-		Write-Host ("$AverageAmountFormat`t$DonatorFormat" -f $_.Value.PerDay,$FinalCurrency,$_.Key)
+		Write-Host ("$AverageAmountFormat`t$DonatorFormat" -f $_.Value.PerDayAmount,$FinalCurrency,$_.Key)
 	}
 }
 if ($PassThru) {
