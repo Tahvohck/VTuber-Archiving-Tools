@@ -54,9 +54,10 @@ foreach ($log in (get-childItem *.json)) {
 	foreach($message in $json) {
 		$LogHasADono = $true
 		$donation = @{
-			donator =	$message.author.name
-			currency =	$message.money.currency -replace "₱","PHP"
-			amount =	$message.money.amount
+			donator =		$message.author.id
+			donatorName =	$message.author.name
+			currency =		$message.money.currency -replace "₱","PHP"
+			amount =		$message.money.amount
 			timestamp = [datetimeoffset]::FromUnixTimeMilliseconds($message.timestamp/1000).LocalDateTime
 		}
 		
@@ -74,14 +75,23 @@ foreach ($log in (get-childItem *.json)) {
 
 		# Do some fixups here for known alts
 		$donator = "$($donation.donator)"
-		if ($donator -like "*Simulanze*") {
-			$donator = "Simulanze"
-		} elseif ($donator -in @("John -R&D at ShikiDew Industries-","John")) {
-			$donator = "Pang/John"
-		} elseif ($donator -like "*LC_Lapen*") {
-			$donator = "LC_Lapen"
-		} elseif ($donator -like "*Meateor*") {
-			$donator = "Meateor"
+		$AltsMatrix = @(
+			@(	# Simulanze
+				"UCDCHb-nyY8DXox9TIobHdSQ","UCM0Jyw5uzzq2bfIrALIimGg","UCw2kiianOn1uHm1rXiDOfOw",
+				"UC2vD9YRQsG6HI1ogconz9zw","UCZPhNzwpn4GXw9yHBmzZIvQ"
+			),
+			@(	# Wall-E
+				"UC1yTFaabaq5xARIKiRc-Gxg","UCvy_H0tph_D0s8WfyMOXrOw","UCLUbKlAUlLQSELFPjSOZ4aA"
+			),
+			@(	# Bucket
+				"UCKPR6yTobtggJLU8x1Fd9Zg","UCbAYBuoexzkLjCSDXCmOlpw"
+			),
+			@(	#LC_Lapen
+				"UC9RB4WfKOeqXVpqu-WW9xsw","UC-w49_y6xgAKbb2H9oEj3cw"
+			)
+		)
+		foreach ($altList in $AltsMatrix) {
+			if($donator -in $altList) { $donator = $altList[0] }
 		}
 		$donation.donator = $donator
 
@@ -115,6 +125,7 @@ foreach($donation in $donation_list) {
 	if($null -eq $AggregateDonations[$donator]) {
 		$AggregateDonations[$donator] = @{}
 		$AggregateDonations[$donator]['money'] = @{}
+		$AggregateDonations[$donator]['nameList'] = @{}
 		$AggregateDonations[$donator].earliest = [DateTime]::MaxValue
 		$AggregateDonations[$donator].last = [DateTime]::MinValue
 
@@ -123,6 +134,7 @@ foreach($donation in $donation_list) {
 
 	$AggregateDonations[$donator].money[$donation.currency] += $donation.amount
 	$AggregateDonations[$donator].donations += 1
+	$AggregateDonations[$donator].nameList[$donation.donatorName] += 1
 	if ($donation.timestamp -lt $AggregateDonations[$donator].earliest) {
 		$AggregateDonations[$donator].earliest = $donation.timestamp
 	}
@@ -165,11 +177,16 @@ foreach($donator in $donators) {
 	$days = [Math]::Max(1, ($donator_stats["last"].Date -  $donator_stats["earliest"].Date).TotalDays)
 	$donator_stats["PerDayAmount"] = [Math]::Round($donator_stats["TOTAL"] / $days, 3)
 	$donator_stats["PerDayCount"] = [Math]::Round($donator_stats["donations"] / $days, 3)
-	$AggregateDonations[$donator] = [pscustomobject]$donator_stats
+	$donator_stats["Name"] = $donator_stats.nameList.GetEnumerator() |
+		Sort -Descending {$_.Value} |
+		Select -First 1 -ExpandProperty Key
 	if ($AggregateDonations[$donator].donations -ge $RegularDonatorThreshold) {
 		# Don't need to do a presence check since we already filtered donators to uniques
 		$regularDonators.Add($donator) | Out-Null
 	}
+	# Store the updated stats file and remove the YT ID key entry
+	$AggregateDonations[$donator_stats.Name] = [pscustomobject]$donator_stats
+	$AggregateDonations.Remove($donator)
 }
 
 # Stop Stopwatch
@@ -226,19 +243,19 @@ if ($ShowTopDonators) {
 	}
 	Write-Host -Fore Cyan "Top Donators (All-Time):"
 	$AggregateDonations.GetEnumerator() | Sort {$_.Value.TOTAL} -Descending | Select -First $ShowHowMany | %{
-		Write-Host ("$AllTimeAmountFormat`t$DonatorFormat" -f $_.Value.TOTAL,$FinalCurrency,$_.Key)
+		Write-Host ("$AllTimeAmountFormat`t$DonatorFormat" -f $_.Value.TOTAL,$FinalCurrency,$_.Value.Name)
 	}
 	Write-Host -Fore Cyan "Top Donators (Average per donation, more than $RegularDonatorThreshold donos):"
 	$AggregateDonations.GetEnumerator() | Sort {[float]$_.Value.average} -Descending | Where-Object {
 		$_.Value.donations -gt $RegularDonatorThreshold
 	} | Select -First $ShowHowMany | %{
-		Write-Host ("$AverageAmountFormat`t$DonatorFormat" -f $_.Value.average,$FinalCurrency,$_.Key)
+		Write-Host ("$AverageAmountFormat`t$DonatorFormat" -f $_.Value.average,$FinalCurrency,$_.Value.Name)
 	}
 	Write-Host -Fore Cyan "Top Donators (Personal average 'per day', more than $RegularDonatorThreshold donos):"
 	$AggregateDonations.GetEnumerator() | Sort {$_.Value.PerDayAmount} -Descending | Where-Object {
 		$_.Value.donations -gt $RegularDonatorThreshold
 	} | Select -First $ShowHowMany | %{
-		Write-Host ("$AverageAmountFormat`t$DonatorFormat" -f $_.Value.PerDayAmount,$FinalCurrency,$_.Key)
+		Write-Host ("$AverageAmountFormat`t$DonatorFormat" -f $_.Value.PerDayAmount,$FinalCurrency,$_.Value.Name)
 	}
 }
 if ($PassThru) {
