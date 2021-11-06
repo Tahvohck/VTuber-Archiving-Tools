@@ -227,15 +227,15 @@ if ($ShowTopDonators) {
 	$AggregateDonations.GetEnumerator() | Sort {$_.Value.TOTAL} -Descending | Select -First $ShowHowMany | %{
 		Write-Host ("$AllTimeAmountFormat`t$DonatorFormat" -f $_.Value.TOTAL,$FinalCurrency,$_.Key)
 	}
-	Write-Host -Fore Cyan "Top Donators (Average per donation, more than 10 donos):"
+	Write-Host -Fore Cyan "Top Donators (Average per donation, more than $RegularDonatorThreshold donos):"
 	$AggregateDonations.GetEnumerator() | Sort {[float]$_.Value.average} -Descending | Where-Object {
-		$_.Value.donations -gt 10
+		$_.Value.donations -gt $RegularDonatorThreshold
 	} | Select -First $ShowHowMany | %{
 		Write-Host ("$AverageAmountFormat`t$DonatorFormat" -f $_.Value.average,$FinalCurrency,$_.Key)
 	}
-	Write-Host -Fore Cyan "Top Donators (Personal average 'per day', more than 10 donos):"
+	Write-Host -Fore Cyan "Top Donators (Personal average 'per day', more than $RegularDonatorThreshold donos):"
 	$AggregateDonations.GetEnumerator() | Sort {$_.Value.PerDay} -Descending | Where-Object {
-		$_.Value.donations -gt 10
+		$_.Value.donations -gt $RegularDonatorThreshold
 	} | Select -First $ShowHowMany | %{
 		Write-Host ("$AverageAmountFormat`t$DonatorFormat" -f $_.Value.PerDay,$FinalCurrency,$_.Key)
 	}
