@@ -14,7 +14,8 @@ Param(
 	[float]$EstimatedCompanyCut = -1,
 	[switch]$KeepYTIDKeys,
 	[switch]$TestConversion,
-	[switch]$PassThru
+	[switch]$PassThru,
+	$ExtraAltsMatrix
 )
 $ScriptPath = (Get-Item $PSCommandPath).Directory.Fullname
 . "$ScriptPath/common-functions.ps1"
@@ -35,7 +36,7 @@ $NumberOfMonetizedStreams = 0
 $ConversionREST = "https://free-currency-converter.herokuapp.com/list/convert?source={0}&destination={1}"
 $FinalCurrency = $FinalCurrency.ToUpper()
 
-$AltsMatrix = @(
+$AltsMatrix = [collections.arraylist]@(
 	@(	# Simulanze
 		"UCDCHb-nyY8DXox9TIobHdSQ","UCM0Jyw5uzzq2bfIrALIimGg","UCw2kiianOn1uHm1rXiDOfOw","UC2vD9YRQsG6HI1ogconz9zw",
 		"UCZPhNzwpn4GXw9yHBmzZIvQ"
@@ -59,6 +60,21 @@ $AltsMatrix = @(
 		"UC_j2MhWR7RLDsM1FOZygV6g","UCqxApYhQx3FcH5QjjfzOI5w","UC7M3MYrlix9zfoIlmCItLCQ"
 	)
 )
+if ($ExtraAltsMatrix[0][0].GetType() -eq [char]) {
+	Write-Host "Buffering EAM"
+	$tmp = [Collections.ArrayList]::new()
+	$tmp.Add(@($ExtraAltsMatrix)) | Out-Null
+	$ExtraAltsMatrix = $tmp
+}
+if ($ExtraAltsMatrix[0][0].GetType() -ne [String] -or $ExtraAltsMatrix[0].Count -lt 2)  {
+	Write-Host -Fore Red "ExtraAltsMatrix must be a matrix of YTID strings. Each inner array is a list of equivalent alts."
+	Write-Host -Fore Red 'If you only have one list of alts, you can specify the matrix as @($AltArray,@())'
+	Exit
+}
+foreach($altArray in $ExtraAltsMatrix) {
+	if ($altArray.Count -eq 0) { continue } #Skip empties
+	$AltsMatrix.Add($altArray) | Out-Null
+}
 
 # Get exchange data
 $ConversionsRaw = Invoke-RestMethod "http://free-currency-converter.herokuapp.com/list?source=$FinalCurrency"
