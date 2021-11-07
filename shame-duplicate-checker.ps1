@@ -43,7 +43,7 @@ foreach($candidate in $candidates) {
 		$dateMatch -and $hasNameBit -and $IDsDiffer
 	}
 	if ($dailyMatches.count -gt 0) {
-		Write-Host -fore Cyan ("--- Duplicate candidates for {0} {1} [{2}] ---" -f $candidate.date,$candidate.Name,$candidate.amount)
+		Write-Host -fore Cyan ("Duplicate candidates for {0} {1} [{2}] [{3}]" -f $candidate.date,$candidate.Name,$candidate.amount,$candidate.ID)
 		$dailyMatches | ft -AutoSize ID,@{E={$_.amount};N="USD_Equ"},Name
 	}
 }
