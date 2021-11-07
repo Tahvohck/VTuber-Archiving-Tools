@@ -10,6 +10,7 @@ Param(
 	[DateTime]$EndDate = [DateTime]::MaxValue,
 	[ValidateRange(0,1)]
 	[float]$EstimatedCompanyCut = -1,
+	[switch]$KeepYTIDKeys,
 	[switch]$TestConversion,
 	[switch]$PassThru
 )
@@ -59,7 +60,9 @@ foreach ($log in (get-childItem *.json)) {
 			currency =		$message.money.currency -replace "₱","PHP"
 			amount =		$message.money.amount
 			timestamp = [datetimeoffset]::FromUnixTimeMilliseconds($message.timestamp/1000).LocalDateTime
+			USD_Equivalent = 0
 		}
+		$donation["USD_Equivalent"] = $donation.amount * $Conversions[$donation.currency] / $Conversions['USD']
 		
 		if ($donation.timestamp -lt $StartDate -or $donation.timestamp -gt $EndDate) { continue }
 		if ($ShowTopCurrencies) {
@@ -184,9 +187,13 @@ foreach($donator in $donators) {
 		# Don't need to do a presence check since we already filtered donators to uniques
 		$regularDonators.Add($donator) | Out-Null
 	}
-	# Store the updated stats file and remove the YT ID key entry
-	$AggregateDonations[$donator_stats.Name] = [pscustomobject]$donator_stats
-	$AggregateDonations.Remove($donator)
+	if ($KeepYTIDKeys) {
+		$AggregateDonations[$donator] = [pscustomobject]$donator_stats
+	} else {
+		# Store the updated stats file and remove the YT ID key entry
+		$AggregateDonations[$donator_stats.Name] = [pscustomobject]$donator_stats
+		$AggregateDonations.Remove($donator)
+	}
 }
 
 # Stop Stopwatch
