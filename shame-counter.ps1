@@ -76,7 +76,7 @@ $StopWatch = [Diagnostics.StopWatch]::New()
 $StopWatch.Start()
 # Read data files
 Write-Host -Fore Cyan "Reading Donations"
-foreach ($log in (get-childItem *.json)) {
+foreach ($log in (get-childItem donations*.json)) {
 	$LogHasADono = $false
 	$json = get-content $log | convertfrom-json
 	foreach($message in $json) {
