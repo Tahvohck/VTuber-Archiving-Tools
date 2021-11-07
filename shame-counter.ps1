@@ -5,6 +5,8 @@ Param(
 	[switch]$Anonymize,
 	[switch]$HideTopAmounts,
 	[ValidateRange(1, [Int]::MaxValue)]
+	[int]$LeaderboardSize = 5,
+	[ValidateRange(1, [Int]::MaxValue)]
 	[int]$RegularDonatorThreshold = 10,
 	[DateTime]$StartDate = [DateTime]::MinValue,
 	[DateTime]$EndDate = [DateTime]::MaxValue,
@@ -232,7 +234,7 @@ Write-Host ("{0,10:yyyy-MM-dd}`tLast Dono" -f $LastDonoDate.Date)
 Write-Host ("{0,10:n0}`tTotal days (since first dono)" -f $DonoDaysRange)
 
 if ($ShowTopCurrencies) {
-	$ShowHowMany = 5
+	$ShowHowMany = $LeaderboardSize
 	Write-Host -Fore Cyan "Top Currencies (By count):"
 	$AggregateCurrencies.GetEnumerator() | Sort {$_.Value.count} -Descending | Select -First $ShowHowMany | %{
 		$PercentOfDonos = $_.Value.count / $NumberOfDonations * 100
@@ -246,7 +248,7 @@ if ($ShowTopCurrencies) {
 }
 
 if ($ShowTopDonators) {
-	$ShowHowMany = 5
+	$ShowHowMany = $LeaderboardSize
 	if ($Anonymize) {
 		$DonatorFormat = "Hidden"
 	} else {
