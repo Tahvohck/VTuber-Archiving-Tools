@@ -33,6 +33,31 @@ $NumberOfMonetizedStreams = 0
 $ConversionREST = "https://free-currency-converter.herokuapp.com/list/convert?source={0}&destination={1}"
 $FinalCurrency = $FinalCurrency.ToUpper()
 
+$AltsMatrix = @(
+	@(	# Simulanze
+		"UCDCHb-nyY8DXox9TIobHdSQ","UCM0Jyw5uzzq2bfIrALIimGg","UCw2kiianOn1uHm1rXiDOfOw","UC2vD9YRQsG6HI1ogconz9zw",
+		"UCZPhNzwpn4GXw9yHBmzZIvQ"
+	),
+	@(	# Wall-E
+		"UC1yTFaabaq5xARIKiRc-Gxg","UCvy_H0tph_D0s8WfyMOXrOw","UCLUbKlAUlLQSELFPjSOZ4aA"
+	),
+	@(	# Bucket
+		"UCKPR6yTobtggJLU8x1Fd9Zg","UCbAYBuoexzkLjCSDXCmOlpw"
+	),
+	@(	# LC_Lapen
+		"UC9RB4WfKOeqXVpqu-WW9xsw","UC-w49_y6xgAKbb2H9oEj3cw"
+	),
+	@(	# Lord Revan (High likelyhood alts only)
+		"UCpVx-y2HTqen1d6pTIfzcDA","UCwKVhK4VC2AYqFgMOq-i2gg"
+	),
+	@(	# Takashi隆
+		"UCjbfykBMumMtRGGLqs03tlQ","UC6FNWcOx1CWtvrgGVvEXjDQ","UCxhXozeebjyi3Rf4Bw2zpLA","UCb76m56_aJCpZBbaux87TsA"
+	),
+	@(	# Some dude on Botan's streams
+		"UC_j2MhWR7RLDsM1FOZygV6g","UCqxApYhQx3FcH5QjjfzOI5w","UC7M3MYrlix9zfoIlmCItLCQ"
+	)
+)
+
 # Get exchange data
 $ConversionsRaw = Invoke-RestMethod "http://free-currency-converter.herokuapp.com/list?source=$FinalCurrency"
 if (!$ConversionsRaw.success) {
@@ -78,23 +103,9 @@ foreach ($log in (get-childItem *.json)) {
 
 		# Do some fixups here for known alts
 		$donator = "$($donation.donator)"
-		$AltsMatrix = @(
-			@(	# Simulanze
-				"UCDCHb-nyY8DXox9TIobHdSQ","UCM0Jyw5uzzq2bfIrALIimGg","UCw2kiianOn1uHm1rXiDOfOw",
-				"UC2vD9YRQsG6HI1ogconz9zw","UCZPhNzwpn4GXw9yHBmzZIvQ"
-			),
-			@(	# Wall-E
-				"UC1yTFaabaq5xARIKiRc-Gxg","UCvy_H0tph_D0s8WfyMOXrOw","UCLUbKlAUlLQSELFPjSOZ4aA"
-			),
-			@(	# Bucket
-				"UCKPR6yTobtggJLU8x1Fd9Zg","UCbAYBuoexzkLjCSDXCmOlpw"
-			),
-			@(	#LC_Lapen
-				"UC9RB4WfKOeqXVpqu-WW9xsw","UC-w49_y6xgAKbb2H9oEj3cw"
-			)
-		)
 		foreach ($altList in $AltsMatrix) {
-			if($donator -in $altList) { $donator = $altList[0] }
+			# Alt found, don't need to keep looking, set current donator ID to first alt for proper combination
+			if($donator -in $altList) { $donator = $altList[0]; break }
 		}
 		$donation.donator = $donator
 
