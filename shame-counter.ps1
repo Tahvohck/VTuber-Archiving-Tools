@@ -61,20 +61,22 @@ $AltsMatrix = [collections.arraylist]@(
 		"UC_j2MhWR7RLDsM1FOZygV6g","UCqxApYhQx3FcH5QjjfzOI5w","UC7M3MYrlix9zfoIlmCItLCQ"
 	)
 )
-if ($ExtraAltsMatrix[0][0].GetType() -eq [char]) {
-	Write-Host "Buffering EAM"
-	$tmp = [Collections.ArrayList]::new()
-	$tmp.Add(@($ExtraAltsMatrix)) | Out-Null
-	$ExtraAltsMatrix = $tmp
-}
-if ($ExtraAltsMatrix[0][0].GetType() -ne [String] -or $ExtraAltsMatrix[0].Count -lt 2)  {
-	Write-Host -Fore Red "ExtraAltsMatrix must be a matrix of YTID strings. Each inner array is a list of equivalent alts."
-	Write-Host -Fore Red 'If you only have one list of alts, you can specify the matrix as @($AltArray,@())'
-	Exit
-}
-foreach($altArray in $ExtraAltsMatrix) {
-	if ($altArray.Count -eq 0) { continue } #Skip empties
-	$AltsMatrix.Add($altArray) | Out-Null
+if ($null -ne $ExtraAltsMatrix) {
+	if ($ExtraAltsMatrix[0][0].GetType() -eq [char]) {
+		Write-Host "Buffering EAM"
+		$tmp = [Collections.ArrayList]::new()
+		$tmp.Add(@($ExtraAltsMatrix)) | Out-Null
+		$ExtraAltsMatrix = $tmp
+	}
+	if ($ExtraAltsMatrix[0][0].GetType() -ne [String] -or $ExtraAltsMatrix[0].Count -lt 2)  {
+		Write-Host -Fore Red "ExtraAltsMatrix must be a matrix of YTID strings. Each inner array is a list of equivalent alts."
+		Write-Host -Fore Red 'If you only have one list of alts, you can specify the matrix as @($AltArray,@())'
+		Exit
+	}
+	foreach($altArray in $ExtraAltsMatrix) {
+		if ($altArray.Count -eq 0) { continue } #Skip empties
+		$AltsMatrix.Add($altArray) | Out-Null
+	}
 }
 
 # Get exchange data
