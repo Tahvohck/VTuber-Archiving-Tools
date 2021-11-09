@@ -4,6 +4,7 @@ Param(
 	[switch]$ShowTopCurrencies,
 	[switch]$Anonymize,
 	[switch]$HideTopAmounts,
+	$DonationDirectory,
 	[ValidateRange(1, [Int]::MaxValue)]
 	[int]$LeaderboardSize = 5,
 	[ValidateRange(1, [Int]::MaxValue)]
@@ -91,8 +92,21 @@ if (!$ConversionsRaw.success) {
 $StopWatch = [Diagnostics.StopWatch]::New()
 $StopWatch.Start()
 # Read data files
-Write-Host -Fore Cyan "Reading Donations"
-foreach ($log in (get-childItem donations*.json)) {
+try {
+	if ($null -ne $DonationDirectory) {
+		push-location $DonationDirectory -ea Stop
+		Write-Host -Fore Cyan "Reading donations from $DonationDirectory"
+		$logs = get-childItem donations*.json
+		pop-location
+	} else {
+		Write-Host -Fore Cyan "Reading donations"
+		$logs = get-childItem donations*.json
+	}
+} catch {
+	Write-Host -Fore Red "Could not move to donation directory. Exiting."
+	exit
+}
+foreach ($log in $logs) {
 	$LogHasADono = $false
 	$json = get-content $log | convertfrom-json
 	foreach($message in $json) {
