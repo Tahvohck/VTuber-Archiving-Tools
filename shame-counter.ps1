@@ -7,8 +7,8 @@ Param(
 	$DonationDirectory,
 	[ValidateRange(1, [Int]::MaxValue)]
 	[int]$LeaderboardSize = 5,
-	[ValidateRange(1, [Int]::MaxValue)]
-	[int]$RegularDonatorThreshold = 10,
+	[ValidateRange(1, [float]::MaxValue)]
+	[float]$RegularDonatorThreshold = 1,
 	[DateTime]$StartDate = [DateTime]::MinValue,
 	[DateTime]$EndDate = [DateTime]::MaxValue,
 	[ValidateRange(0,1)]
@@ -224,11 +224,15 @@ foreach($donator in $donators) {
 	$donator_stats["average"] = "{0:n2}" -f ($donator_stats["TOTAL"] / $donator_stats["donations"])
 	$days = [Math]::Max(1, ($donator_stats["last"].Date -  $donator_stats["earliest"].Date).TotalDays)
 	$donator_stats["PerDayAmount"] = [Math]::Round($donator_stats["TOTAL"] / $days, 3)
-	$donator_stats["PerDayCount"] = [Math]::Round($donator_stats["donations"] / $days, 3)
+	$donator_stats["PerWeekCount"] = [Math]::Round($donator_stats["donations"] / [Math]::Ceiling($days/7), 3)
+	$donator_stats["isRegularDonator"] = (
+		$donator_stats["PerWeekCount"] -gt $RegularDonatorThreshold -and
+		$days -gt 14
+	)
 	$donator_stats["Name"] = $donator_stats.nameList.GetEnumerator() |
 		Sort -Descending {$_.Value} |
 		Select -First 1 -ExpandProperty Key
-	if ($AggregateDonations[$donator].donations -ge $RegularDonatorThreshold) {
+	if ($donator_stats["isRegularDonator"]) {
 		# Don't need to do a presence check since we already filtered donators to uniques
 		$regularDonators.Add($donator) | Out-Null
 	}
@@ -259,7 +263,7 @@ if ($EstimatedCompanyCut -ne -1) {
 	Write-Host ("{0,10:n2} {1}`tEstimated hourly pay (less YT cut and company cut)" -f $hourly,$FinalCurrency)
 }
 Write-Host ("{0,10:n0}`tUnique Donators" -f $donators.Count)
-Write-Host ("{0,10:n0}`tUnique Regular Donators (more than {1} donos)" -f ($regularDonators.Count,$RegularDonatorThreshold))
+Write-Host ("{0,10:n0}`tUnique Regular Donators (more than {1} donos per week)" -f ($regularDonators.Count,$RegularDonatorThreshold))
 Write-Host ("{0,10:n2}`tAverage donations per donator" -f ($NumberOfDonations / $donators.Length))
 Write-Host ("{0,10:yyyy-MM-dd}`tFirst Dono" -f $FirstDonoDate.Date)
 Write-Host ("{0,10:yyyy-MM-dd}`tLast Dono" -f $LastDonoDate.Date)
@@ -297,15 +301,15 @@ if ($ShowTopDonators) {
 	$AggregateDonations.GetEnumerator() | Sort {$_.Value.TOTAL} -Descending | Select -First $ShowHowMany | %{
 		Write-Host ("$AllTimeAmountFormat`t$DonatorFormat" -f $_.Value.TOTAL,$FinalCurrency,$_.Value.Name)
 	}
-	Write-Host -Fore Cyan "Top Donators (Average per donation, more than $RegularDonatorThreshold donos):"
+	Write-Host -Fore Cyan "Top Donators (Average per donation, regular donators only):"
 	$AggregateDonations.GetEnumerator() | Sort {[float]$_.Value.average} -Descending | Where-Object {
-		$_.Value.donations -gt $RegularDonatorThreshold
+		$_.Value.isRegularDonator
 	} | Select -First $ShowHowMany | %{
 		Write-Host ("$AverageAmountFormat`t$DonatorFormat" -f $_.Value.average,$FinalCurrency,$_.Value.Name)
 	}
-	Write-Host -Fore Cyan "Top Donators (Personal average 'per day', more than $RegularDonatorThreshold donos):"
+	Write-Host -Fore Cyan "Top Donators (Personal average 'per day', regular donators only):"
 	$AggregateDonations.GetEnumerator() | Sort {$_.Value.PerDayAmount} -Descending | Where-Object {
-		$_.Value.donations -gt $RegularDonatorThreshold
+		$_.Value.isRegularDonator
 	} | Select -First $ShowHowMany | %{
 		Write-Host ("$AverageAmountFormat`t$DonatorFormat" -f $_.Value.PerDayAmount,$FinalCurrency,$_.Value.Name)
 	}
