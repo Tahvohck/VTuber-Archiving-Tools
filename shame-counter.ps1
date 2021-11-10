@@ -13,6 +13,7 @@ Param(
 	[DateTime]$EndDate = [DateTime]::MaxValue,
 	[ValidateRange(0,1)]
 	[float]$EstimatedCompanyCut = -1,
+	[Alias("DuplicateCheckMode")]
 	[switch]$KeepYTIDKeys,
 	[switch]$TestConversion,
 	[switch]$PassThru,
