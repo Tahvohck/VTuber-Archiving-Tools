@@ -36,7 +36,6 @@ $LastDonoDate = [DateTime]::MinValue
 $TotalIncomeToDate = 0
 $NumberOfStreams = 0
 $NumberOfMonetizedStreams = 0
-$ConversionREST = "https://free-currency-converter.herokuapp.com/list/convert?source={0}&destination={1}"
 $FinalCurrency = $FinalCurrency.ToUpper()
 
 $AltsMatrix = [collections.arraylist]@(
