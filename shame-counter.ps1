@@ -9,6 +9,7 @@ Param(
 	[int]$LeaderboardSize = 5,
 	[ValidateRange(1, [float]::MaxValue)]
 	[float]$RegularDonatorThreshold = 1,
+	[int]$RegularDonatorMinumDays = 10,
 	[DateTime]$StartDate = [DateTime]::MinValue,
 	[DateTime]$EndDate = [DateTime]::MaxValue,
 	[ValidateRange(0,1)]
@@ -228,7 +229,7 @@ foreach($donator in $donators) {
 	$donator_stats["PerWeekCount"] = [Math]::Round($donator_stats["donations"] / [Math]::Ceiling($days/7), 3)
 	$donator_stats["isRegularDonator"] = (
 		$donator_stats["PerWeekCount"] -gt $RegularDonatorThreshold -and
-		$days -gt 14
+		$days -gt $RegularDonatorMinumDays
 	)
 	$donator_stats["Name"] = $donator_stats.nameList.GetEnumerator() |
 		Sort -Descending {$_.Value} |
@@ -248,27 +249,64 @@ foreach($donator in $donators) {
 
 # Stop Stopwatch
 $StopWatch.Stop()
-# Display final info
-Write-Host ("{0,10:mm\:ss} M:S`tTime taken to process data" -f $StopWatch.Elapsed)
-Write-Host ("{0,10:n0} {1}`tTotal to date" -f $TotalIncomeToDate,$FinalCurrency)
-Write-Host ("{0,10:n2} {1}`tAverage donation" -f ($TotalIncomeToDate / $NumberOfDonations),$FinalCurrency)
-$DonoDaysRange = [Math]::Max(1, ($LastDonoDate - $FirstDonoDate).TotalDays)
-Write-Host ("{0,10:n2} {1}`tPer stream" -f ($TotalIncomeToDate / $NumberOfStreams),$FinalCurrency)
-Write-Host ("{0,10:n2} {1}`tPer monetized stream" -f ($TotalIncomeToDate / $NumberOfMonetizedStreams),$FinalCurrency)
-Write-Host ("{0,10:n2} {1}`tPer day (since first dono)" -f ($TotalIncomeToDate / $DonoDaysRange),$FinalCurrency)
+# Build statistics array
+$DonoDaysRange = [Math]::Ceiling(($LastDonoDate - $FirstDonoDate).TotalDays)
+$Stats = [pscustomobject]@{
+	Directory = if ($DonationDirectory) {gi $DonationDirectory} else {$pwd.Path}
+	TimeToProcess =	$StopWatch.Elapsed
+	FinalCurrency =	$FinalCurrency
+	IncomeTotal =	[Math]::Round($TotalIncomeToDate, 2)
+	IncomeAverage =	[Math]::Round($TotalIncomeToDate / $NumberOfDonations, 2)
+	IncomePerStream =
+					[Math]::Round($TotalIncomeToDate / $NumberOfStreams, 2)
+	IncomePerMonetizedStream =
+					[Math]::Round($TotalIncomeToDate / $NumberOfMonetizedStreams, 2)
+	IncomePerDay =	[Math]::Round($TotalIncomeToDate / $DonoDaysRange, 2)
+	IncomeEstimatedHourly = $null
+	DateFirstDono =	$FirstDonoDate.Date
+	DateLastDono =	$LastDonoDate.Date
+	DateRange =		$DonoDaysRange
+	DonatorAvgNumDonations =
+					$NumberOfDonations / $donators.Length
+	DonatorTotal =	$donators.Count
+	DonatorRegulars =
+					$regularDonators.Count
+	NumStreams =	$NumberOfStreams
+	NumMonetizedStreams =
+					$NumberOfMonetizedStreams
+	NumDonations =	$NumberOfDonations
+}
 if ($EstimatedCompanyCut -ne -1) {
 	$daily = ($TotalIncomeToDate / $DonoDaysRange)
 	$lessYT = $daily * (1 - 0.3)
 	$lessCompany = $lessYT * (1 - $EstimatedCompanyCut)
 	$hourly = $lessCompany * 7 / 40
-	Write-Host ("{0,10:n2} {1}`tEstimated hourly pay (less YT cut and company cut)" -f $hourly,$FinalCurrency)
+	$Stats.IncomeEstimatedHourly = [Math]::Round($hourly, 2)
+	$InfoLineHourly = "{1,10:n2} {0}`tEstimated hourly pay (less YT and company cuts)"
 }
-Write-Host ("{0,10:n2}`tAverage donations per donator" -f ($NumberOfDonations / $donators.Length))
-Write-Host ("{0,10:yyyy-MM-dd}`tFirst Dono" -f $FirstDonoDate.Date)
-Write-Host ("{0,10:yyyy-MM-dd}`tLast Dono" -f $LastDonoDate.Date)
-Write-Host ("{0,10:n0}`tTotal days (since first dono)" -f $DonoDaysRange)
-Write-Host ("{0,10:n0}`tUnique Donators" -f $donators.Count)
-Write-Host ("{0,10:n0}`tUnique Regular Donators (more than {1} donos per week`n`t`tand more than two weeks)" -f ($regularDonators.Count,$RegularDonatorThreshold))
+
+# Display final info
+$InfoOutputArray = @(
+	"{0,10:mm\:ss} M:S`tTime taken to process data" -f	$Stats.TimeToProcess
+	"{0,10:yyyy-MM-dd}`tFirst Dono" -f			$Stats.DateFirstDono
+	"{0,10:yyyy-MM-dd}`tLast Dono" -f			$Stats.DateLastDono
+	"{0,10:n0} `tTotal days" -f					$Stats.DateRange
+	"{1,10:n0} {0}`tTotal to date" -f			$Stats.FinalCurrency,$Stats.IncomeTotal
+	"{1,10:n2} {0}`tAverage donation" -f		$Stats.FinalCurrency,$Stats.IncomeAverage
+	"{1,10:n2} {0}`tPer stream" -f 				$Stats.FinalCurrency,$Stats.IncomePerStream
+	"{1,10:n2} {0}`tPer stream (monetized)" -f	$Stats.FinalCurrency,$Stats.IncomePerMonetizedStream
+	"{1,10:n2} {0}`tPer day since 1st dono" -f	$Stats.FinalCurrency,$Stats.IncomePerDay
+	if ($InfoLineHourly) { $InfoLineHourly -f	$Stats.FinalCurrency,$stats.IncomeEstimatedHourly}
+	"{0,10:n2}`tAverage donations per donator" -f
+												$Stats.DonatorAvgNumDonations
+	"{0,10:n0}`tUnique Donators" -f				$Stats.DonatorTotal
+	"{0,10:n0}`tUnique Regular Donators" -f		$Stats.DonatorRegulars
+	"Regular Donators have more than {0} donos per week over at least {1} days." -f
+												$RegularDonatorThreshold,$RegularDonatorMinumDays
+)
+foreach($line in $InfoOutputArray) {
+	if ($line) { Write-Host $line }
+}
 
 if ($ShowTopCurrencies) {
 	$ShowHowMany = $LeaderboardSize
@@ -316,6 +354,9 @@ if ($ShowTopDonators) {
 	}
 }
 if ($PassThru) {
-	$AggregateDonations
-	$donation_list
+	$tmp = [collections.arraylist]::new()
+	$tmp.add($AggregateDonations) | Out-Null
+	$tmp.add($donation_list) | Out-Null
+	$tmp.add($Stats) | Out-Null
+	$tmp
 }
