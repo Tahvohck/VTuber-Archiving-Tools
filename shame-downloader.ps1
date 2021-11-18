@@ -4,6 +4,7 @@ Param(
 	[switch]$Detailed,
 	[switch]$PassThru,
 	[switch]$UsePyPy,
+	[switch]$UseSubDirectoriesForChannels,
 	[DateTime]$StartDate = [DateTime]::MinValue,
 	[DateTime]$EndDate = [DateTime]::MaxValue,
 	[byte]$MaxThreads = 8
@@ -155,13 +156,21 @@ if ($PassThru) { $videos }
 foreach($video in $videos) {
 	$Powershell = [powershell]::Create()
 	$Powershell.RunspacePool = $RunspacePool
-	$null = $Powershell.AddScript($ScriptblkDownloader).AddParameters(@{
+	$BlockParam = @{
 		VideoID = $video.ID
 		WorkingPath = $pwd.Path
 		Detailed = $Detailed
 		RecentVideo = ([datetime]::now - $video.published_at.ToLocalTime()).TotalDays -lt 2
 		python = $python
-	})
+	}
+	if ($UseSubDirectoriesForChannels){
+		$BlockParam.WorkingPath += "/$($video.channel.english_name)"
+		if (!(Test-Path $BlockParam.WorkingPath)) {
+			Write-Notable "Making new directory $($BlockParam.WorkingPath)"
+			New-Item -ItemType "Directory" -path $BlockParam.WorkingPath | Out-Null
+		}
+	}
+	$null = $Powershell.AddScript($ScriptblkDownloader).AddParameters($BlockParam)
 	$Jobs += $Powershell.BeginInvoke()
 
 	$ConsoleJobs += Register-ObjectEvent $Powershell.Streams.Information DataAdded -Action $ScriptblkLogger
