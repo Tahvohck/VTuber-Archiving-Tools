@@ -26,7 +26,7 @@ $dailyTotals = foreach($date in $check.GetEnumerator()) {
 $dailyTotals = $dailyTotals | sort date
 $candidates = $dailyTotals | ?{ $_.amount -gt 450 } | sort Name
 $ExcludeBits = @(
-	"KFP","the","deadbeat","ch.","Lord"
+	"KFP","the","deadbeat","ch.","Lord","husband"
 )
 
 foreach($candidate in $candidates) {
