@@ -1,11 +1,10 @@
-$check = @{}; $donos | %{
-	if ($aggr[$_.donator].donations -gt 1) {
-		$check[$_.timestamp.Date.ToString("yy\-MM\-dd")] = @{}
-	}
-};
+$check = @{};
+
 $donos | %{
 	if ($aggr[$_.donator].donations -gt 1) {
 		$tstamp = $_.timestamp.Date.ToString("yy\-MM\-dd")
+
+		if ($null -eq $check[$tstamp]) {$check[$tstamp] = @{}}
 		if ($null -eq $check[$tstamp][$_.donator]) {
 			$check[$tstamp][$_.donator] = [pscustomobject]@{
 				Name = $_.donatorName
@@ -16,7 +15,8 @@ $donos | %{
 		}
 		$check[$tstamp][$_.donator].amount += $_.USD_Equivalent
 	}
-}
+};
+
 $dailyTotals = foreach($date in $check.GetEnumerator()) {
 	$date.Value.GetEnumerator() | %{
 		$_.Value.amount = [math]::Round($_.Value.amount)
@@ -28,6 +28,7 @@ $candidates = $dailyTotals | ?{ $_.amount -gt 450 } | sort Name
 $ExcludeBits = @(
 	"KFP","the","deadbeat","ch.","Lord"
 )
+
 foreach($candidate in $candidates) {
 	$nameBits = @($candidate.Name.Split(" ") | 
 		?{$_ -notin $ExcludeBits } |
@@ -43,7 +44,12 @@ foreach($candidate in $candidates) {
 		$dateMatch -and $hasNameBit -and $IDsDiffer
 	}
 	if ($dailyMatches.count -gt 0) {
-		Write-Host -fore Cyan ("Duplicate candidates for {0} {1} [{2}] [{3}]" -f $candidate.date,$candidate.Name,$candidate.amount,$candidate.ID)
+		Write-Host -fore Cyan ("Duplicate candidates for {0} {1} [{2}] [{3}]" -f @(
+			$candidate.date
+			$candidate.Name
+			$candidate.amount
+			$candidate.ID
+		))
 		$dailyMatches | ft -AutoSize ID,@{E={$_.amount};N="USD_Equ"},Name
 	}
 }
