@@ -1,9 +1,33 @@
-$stream_URL = "https://youtu.be/8FuWq6kG_CE"
+param (
+	# Stream URL
+	[Parameter(Mandatory=1)]$StreamURL,
+	# Time to wait between checks prior to stream starting
+	[ValidateRange(1,600)]
+	[float]$PrestreamSleep = 30,
+	# Download streams into segments this big
+	[timespan]$SliceSize = "0:1:0",
+	$OutputPath = "."
+)
+
 $stream_started = $false
 $stream_ongoing = $false
-$SliceSize = [timespan]::new(0,1,0).ToString('hh\:mm\:ss')
-$PrestreamSleep = 30
+$SliceSizeString = $SliceSize.ToString('hh\:mm\:ss')
 $UserQuit = $null
+
+# Prepare output directory
+$OutputPathInfo = if ([IO.Path]::IsPathRooted($OutputPath)) {
+	[IO.DirectoryInfo][IO.Path]::GetFullPath($OutputPath).Normalize()
+} else {
+	$OutputPath = [string]::Join([IO.path]::DirectorySeparatorChar, $pwd, $OutputPath)
+	[IO.DirectoryInfo][IO.Path]::GetFullPath($OutputPath).Normalize()
+}
+if (!$OutputPathInfo.Exists){
+	Write-Host -Fore Red "Output path [$OutputPathInfo] doesn't exist. Making it."
+	New-Item -ItemType Directory $OutputPathInfo | Out-Null
+}
+Push-Location $OutputPathInfo
+
+# Stream download loop
 while ((!$stream_started -or $stream_ongoing) -and -not $UserQuit) {
 	# Check if user hit any keys
 	while ([Console]::KeyAvailable) {
@@ -16,7 +40,7 @@ while ((!$stream_started -or $stream_ongoing) -and -not $UserQuit) {
 		Write-Host "Exiting..."
 		continue
 	}
-	$manifest = youtube-dl -g $stream_URL
+	$manifest = youtube-dl -g $StreamURL
 	$YTDL_Success = $?
 
 	# Stream is considered started once:
@@ -45,10 +69,13 @@ while ((!$stream_started -or $stream_ongoing) -and -not $UserQuit) {
 		continue
 	}
 
-	Write-Host "Trying to download"
+	Write-Host "Starting downloader."
 	ffmpeg -i $manifest `
-		-segment_time $SliceSize `
+		-segment_time $SliceSizeString `
 		-segment_list "seg_$([datetime]::Now.ToString('MMMdd_HHmmss')).ffconcat" `
 		-loglevel repeat+level+warning `
-		-f segment -strftime 1 -c copy "output_%H%M%S.ts"
+		-f segment -strftime 1 -c copy "output_%b%d-%H%M%S.ts"
+	Write-Host "Downloader exited."
 }
+Get-ChildItem "*.ffconcat"
+Pop-Location
