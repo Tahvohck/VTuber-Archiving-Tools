@@ -161,7 +161,7 @@ $WaitAndGetVideo = {
 	} while ($NotInLeadTime)
 
 	# Begin downloading video
-	Write-Notable "Video $($Video.ID)/$($video.channel.name) will be starting soon."
+	Write-Notable "Video $($Video.ID)/$($video.channel.english_name) will be starting soon. Switching to hotmonitor."
 	$stdout = @()
 	$stderr = @()
 	$StreamStarted = $false
@@ -200,7 +200,7 @@ $WaitAndGetVideo = {
 			$stdout += & $state.Downloader --config-location "$($state.ConfigFileInfo)" $StreamUrl
 		) 2>&1
 	} while (!$StreamStarted -or $StreamOngoing)
-	Write-Host "Video $($Video.ID)/$($video.channel.name) has finished downloading."
+	Write-Host "Video $($Video.ID)/$($video.channel.english_name) has finished downloading."
 
 	# Done downloading video.
 	return $Video.id
