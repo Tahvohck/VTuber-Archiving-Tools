@@ -208,6 +208,9 @@ $WaitAndGetVideo = {
 			$stdout += & $state.Downloader --config-location "$($state.ConfigFileInfo)" $StreamUrl
 		) 2>&1
 	} while (!$StreamStarted -or $StreamOngoing)
+	if ($stderr.Count -gt 0) {
+		$stderr | Out-file -Append "$($video.id).errorlog"
+	}
 	Write-Host "Video $($Video.ID)/$($video.channel.english_name) has finished downloading."
 
 	# Done downloading video.
