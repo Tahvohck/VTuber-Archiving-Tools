@@ -170,7 +170,7 @@ $WaitAndGetVideo = {
 	Do {
 		# Precheck the stream. Manifest file is a fairly reliable way to get the stream status.
 		# Hide the error stream, since we don't care about it.
-		($manifest = & $state.Downloader --get-URL $StreamUrl) 2>&1 | Out-Null
+		($manifest = & $state.Downloader --get-url $StreamUrl) 2>&1 | Out-Null
 		$DownloaderSuccess = $?
 		if (!$StreamStarted) {
 			$StreamStarted = $DownloaderSuccess
@@ -178,7 +178,7 @@ $WaitAndGetVideo = {
 
 		# If manifest download failed for any reason, skip the download step and try again.
 		# If we haven't started yet, wait for a bit first.
-		if ($DownloaderSuccess) {
+		if (!$DownloaderSuccess) {
 			if (!$StreamStarted){
 				Start-Sleep $state.SecondsBetweenRetries
 			} else {
