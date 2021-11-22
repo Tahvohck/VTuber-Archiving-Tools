@@ -171,11 +171,10 @@ $WaitAndGetVideo = {
 	Do {
 		# Precheck the stream. Manifest file is a fairly reliable way to get the stream status.
 		# Hide the error stream, since we don't care about it.
-		($manifest = & $state.Downloader --get-url $StreamUrl) 2>&1 | Out-Null
+		$($manifest = & $state.Downloader --get-url $StreamUrl) 2>&1 | Out-Null
 		$DownloaderSuccess = $?
 		if (!$StreamStarted) {
-			$StreamStarted = $DownloaderSuccess -and
-				($manifest -is [String]) -and ($manifest -like "*yt_live_broadcast*")
+			$StreamStarted = $DownloaderSuccess
 		}
 
 		# If manifest download failed for any reason, skip the download step and try again.
