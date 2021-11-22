@@ -167,13 +167,15 @@ $WaitAndGetVideo = {
 	$StreamStarted = $false
 	$StreamOngoing = $false
 	$StreamUrl = "https://youtu.be/$($video.id)"
+	$ErrorCount = 0
 	Do {
 		# Precheck the stream. Manifest file is a fairly reliable way to get the stream status.
 		# Hide the error stream, since we don't care about it.
 		($manifest = & $state.Downloader --get-url $StreamUrl) 2>&1 | Out-Null
 		$DownloaderSuccess = $?
 		if (!$StreamStarted) {
-			$StreamStarted = $DownloaderSuccess
+			$StreamStarted = $DownloaderSuccess -and
+				($manifest -is [String]) -and ($manifest -like "*yt_live_broadcast*")
 		}
 
 		# If manifest download failed for any reason, skip the download step and try again.
@@ -183,6 +185,12 @@ $WaitAndGetVideo = {
 				Start-Sleep $state.SecondsBetweenRetries
 			} else {
 				Write-Notable "Video [$($Video.ID)/$($video.channel.english_name)] is experiencing connection errors."
+				$ErrorCount += 1
+				if ($ErrorCount -gt 5) {
+					Write-Notable "Video [$($Video.ID)/$($video.channel.english_name)] had too many errors. Invalidating Stream-started and trying again."
+					# Invalidate stream started flag
+					$StreamStarted = $false
+				}
 			}
 			continue
 		}
