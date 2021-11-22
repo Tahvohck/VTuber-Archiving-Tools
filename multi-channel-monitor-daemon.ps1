@@ -164,37 +164,42 @@ $WaitAndGetVideo = {
 	Write-Notable "Video $($Video.ID)/$($video.channel.name) will be starting soon."
 	$stdout = @()
 	$stderr = @()
-	$FailureCount = 0
+	$StreamStarted = $false
+	$StreamOngoing = $false
+	$StreamUrl = "https://youtu.be/$($video.id)"
 	Do {
-		# Run the downloader, capturing both stdout and stderr.
-		$stderr += $( $stdout += & $state.Downloader `
-			--config-location "$($state.ConfigFileInfo)" `
-			"https://youtu.be/$($video.id)"
-		) 2>&1
-		$Downloaded = $?
-		if ($Downloaded -or $CheckPeriod) {
-			# Once the downloader thinks the video is done, confirm with holodex that it's actually offline. The logic
-			# here prevents this from firing if the video hasn't started, but makes it keep checking once the video has.
-			# According to the holodex devs it checks once a minute but only gets data about once every three minutes.
-			# Wait for four minutes, as in practice the downloader has show to handle short blips of outages without
-			# any issues.
-			# TODO: Make this user-configurable.
-			Start-Sleep 240
-			. $CB_UpdateVideo
-			$CheckPeriod = $true
-			if ($null -eq $Video.status) {
-				$FailureCount += 1
-				if ($FailureCount -gt 3) { $Finished = $True }
-				continue
-			}
-			if ($Video.status -eq "past") { $Finished = $true }
-			else {
-				Write-Notable "Video $($Video.ID)/$($video.channel.name) seems to have stopped early. Retrying."
+		# Precheck the stream. Manifest file is a fairly reliable way to get the stream status.
+		# Hide the error stream, since we don't care about it.
+		($manifest = & $state.Downloader --get-URL $StreamUrl) 2>&1 | Out-Null
+		$DownloaderSuccess = $?
+		if (!$StreamStarted) {
+			$StreamStarted = $DownloaderSuccess
+		}
+
+		# If manifest download failed for any reason, skip the download step and try again.
+		# If we haven't started yet, wait for a bit first.
+		if ($DownloaderSuccess) {
+			if (!$StreamStarted){
+				Start-Sleep $state.SecondsBetweenRetries
+			} else {
+				Write-Notable "Video [$($Video.ID)/$($video.channel.english_name)] is experiencing connection errors."
 			}
 			continue
 		}
-		Start-Sleep $state.SecondsBetweenRetries
-	} while (!$Finished)
+
+		# Stream is ongoing if:
+		# Stream has started AND manifest is a string AND it contains the right words
+		$StreamOngoing = $StreamStarted -and ($manifest -is [String]) -and ($manifest -like "*yt_live_broadcast*")
+		if (!$StreamOngoing) {
+			# Video is done, skip the following download block
+			continue
+		}
+
+		# Run the downloader, capturing both stdout and stderr.
+		$stderr += $(
+			$stdout += & $state.Downloader --config-location "$($state.ConfigFileInfo)" $StreamUrl
+		) 2>&1
+	} while (!$StreamStarted -or $StreamOngoing)
 	Write-Host "Video $($Video.ID)/$($video.channel.name) has finished downloading."
 
 	# Done downloading video.
