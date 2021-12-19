@@ -38,8 +38,8 @@ $SplitRegex = [Regex]::new(
 foreach ($line in $lines) {
 	$null,$tag,$hour,$minute,$second = $SplitRegex.Matches($line).groups.value
 	$time = [timespan]("{0}:{1}:{2}" -f @(
-		$hour ? $hour : 0
-		$minute ? $minute : 0
+		if ($hour) { $hour } else { 0 }
+		if ($minute) { $minute } else { 0 }
 		$second
 	))
 	$clampedSeconds = [Math]::Floor(($time.TotalSeconds + $globalOffset) / $bucketSize) * $bucketSize
