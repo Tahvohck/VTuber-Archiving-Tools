@@ -1,24 +1,27 @@
 Param(
 	$FinalCurrency = "JPY",
-	[switch]$ShowTopDonators,
-	[switch]$ShowTopCurrencies,
-	[switch]$Anonymize,
-	[switch]$HideTopAmounts,
 	$DonationDirectory,
+	$ExtraAltsMatrix,
+
 	[ValidateRange(1, [Int]::MaxValue)]
 	[int]$LeaderboardSize = 5,
 	[ValidateRange(1, [float]::MaxValue)]
 	[float]$RegularDonatorThreshold = 1,
 	[int]$RegularDonatorMinumDays = 10,
-	[DateTime]$StartDate = [DateTime]::MinValue,
-	[DateTime]$EndDate = [DateTime]::MaxValue,
 	[ValidateRange(0,1)]
 	[float]$EstimatedCompanyCut = -1,
+
+	[DateTime]$StartDate = [DateTime]::MinValue,
+	[DateTime]$EndDate = [DateTime]::MaxValue,
+
+	[switch]$Anonymize,
+	[switch]$HideTopAmounts,
 	[Alias("DuplicateCheckMode")]
 	[switch]$KeepYTIDKeys,
+	[switch]$ShowTopCurrencies,
+	[switch]$ShowTopDonators,
 	[switch]$TestConversion,
-	[switch]$PassThru,
-	$ExtraAltsMatrix
+	[switch]$PassThru
 )
 $ScriptPath = (Get-Item $PSCommandPath).Directory.Fullname
 . "$ScriptPath/common-functions.ps1"
