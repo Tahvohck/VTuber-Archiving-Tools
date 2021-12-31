@@ -117,12 +117,17 @@ foreach ($log in $logs) {
 		$donation = @{
 			donator =		$message.author.id
 			donatorName =	$message.author.name
-			currency =		$message.money.currency -replace "₱","PHP"
+			currency =		$message.money.currency
 			amount =		$message.money.amount
 			timestamp = [datetimeoffset]::FromUnixTimeMilliseconds($message.timestamp/1000).LocalDateTime
 			USD_Equivalent = 0
 		}
 		$donation["USD_Equivalent"] = $donation.amount * $Conversions[$donation.currency] / $Conversions['USD']
+
+		# Fix non-TLA currency types
+		$donation.currency = $donation.currency -replace "₪","ILS"
+		$donation.currency = $donation.currency -replace "₱","PHP"
+
 		
 		if ($donation.timestamp -lt $StartDate -or $donation.timestamp -gt $EndDate) { continue }
 		if ($ShowTopCurrencies) {
