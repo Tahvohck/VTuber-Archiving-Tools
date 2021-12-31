@@ -127,8 +127,16 @@ if ($null -eq $CCFile) {
 } else {
 	$CachedConversions = Get-Content $CacheFilename | ConvertFrom-Json -AsHashtable
 }
-if ($ConversionsRaw.meta.code -eq 200) {	$CachedConversions[$FinalCurrency] = $ConversionsRaw.response.rates }
-if ($ConversionsRawJPY.meta.code -eq 200) {	$CachedConversions["JPY"] = $ConversionsRawJPY.response.rates }
+if ($ConversionsRaw.meta.code -eq 200) {
+	# Strip off the pscustomobject
+	$tmp = $ConversionsRaw.response.rates | ConvertTo-Json -depth 4 | ConvertFrom-Json -AsHashtable
+	$CachedConversions[$FinalCurrency] = $tmp
+}
+if ($ConversionsRawJPY.meta.code -eq 200) {
+	# Strip off the pscustomobject
+	$tmp = $ConversionsRawJPY.response.rates | ConvertTo-Json -depth 4 | ConvertFrom-Json -AsHashtable
+	$CachedConversions["JPY"] = $tmp
+}
 if ($ConversionsRaw.meta.code -eq 200 -or $ConversionsRawJPY.meta.code -eq 200) {
 	# Write the cache file if either request succeeded.
 	$CachedConversions | ConvertTo-Json | Out-File $CacheFilename
