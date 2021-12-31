@@ -14,7 +14,11 @@ Param(
 	[DateTime]$StartDate = [DateTime]::MinValue,
 	[DateTime]$EndDate = [DateTime]::MaxValue,
 
+	[String]$APIKey,
+	[String]$CacheFilename = "conversion_cache.json",
+
 	[switch]$Anonymize,
+	[switch]$ForceCachedData,
 	[switch]$HideTopAmounts,
 	[Alias("DuplicateCheckMode")]
 	[switch]$KeepYTIDKeys,
@@ -27,7 +31,6 @@ $ScriptPath = (Get-Item $PSCommandPath).Directory.Fullname
 . "$ScriptPath/common-functions.ps1"
 
 # Globals
-$Conversions = @{}
 $AggregateDonations = @{}
 $AggregateCurrencies = @{}
 $donation_list = [Collections.ArrayList]::new() 
@@ -84,14 +87,56 @@ if ($null -ne $ExtraAltsMatrix) {
 }
 
 # Get exchange data
-$ConversionsRaw = Invoke-RestMethod "http://free-currency-converter.herokuapp.com/list?source=$FinalCurrency"
-if (!$ConversionsRaw.success) {
-	Write-Host -Fore Red "Currency [$FinalCurrency] not supported by currency conversion API"
-	Exit
-} else {
-	foreach($conversion in $ConversionsRaw.currency_values){
-		$Conversions[$conversion.name] = 1 / $conversion.value
+$DualConvertMode = $false
+$api = "https://api.currencyscoop.com/v1"
+$apiname = "https://currencyscoop.com"
+if ("" -eq $APIKey -or $ForceCachedData) {
+	if (!$ForceCachedData) {
+		Write-Host -Fore Red "No API key supplied. We'll try to use a local copy of the conversion data."
+		Write-Host -Fore Red "You should go get an API key from $apiname if you weren't expecting this."
 	}
+	$DualConvertMode = $true
+} else {
+	Write-Host "API key [$APIKey]"
+	try {
+		$ConversionsRaw = Invoke-RestMethod "$api/latest?api_key=$APIKey&base=$FinalCurrency" -ErrorVariable RESTFAIL
+		# Don't incur an API hit if the final destination matches our always-hit of JPY
+		if ($FinalCurrency -eq "JPY") {
+			$ConversionsRawJPY = $ConversionsRaw
+		} else {
+			$ConversionsRawJPY = Invoke-RestMethod "$api/latest?api_key=$APIKey&base=JPY" -ErrorVariable RESTFAIL
+		}
+		if ($null -eq $ConversionsRaw.response.rates."$FinalCurrency") {
+			Write-Host -Fore Red "Currency [$FinalCurrency] not supported by currency conversion API"
+			Exit
+		}
+	} catch {
+		$RESTFAIL = $RESTFAIL.Message | ConvertFrom-Json
+		Write-Host -Fore Red $RESTFAIL.meta.message
+		$DualConvertMode = $true
+	}
+}
+
+$CCFile = Get-Item $CacheFilename -ea SilentlyContinue
+if ($null -eq $CCFile) {
+	if ($DualConvertMode) {
+		Write-Host -Fore Red "Unable to find cached conversion data and API is unreachable (did you supply a key?)"
+		exit
+	}
+	$CachedConversions = @{}
+} else {
+	$CachedConversions = Get-Content $CacheFilename | ConvertFrom-Json -AsHashtable
+}
+if ($ConversionsRaw.meta.code -eq 200) {	$CachedConversions[$FinalCurrency] = $ConversionsRaw.response.rates }
+if ($ConversionsRawJPY.meta.code -eq 200) {	$CachedConversions["JPY"] = $ConversionsRawJPY.response.rates }
+if ($ConversionsRaw.meta.code -eq 200 -or $ConversionsRawJPY.meta.code -eq 200) {
+	# Write the cache file if either request succeeded.
+	$CachedConversions | ConvertTo-Json | Out-File $CacheFilename
+}
+
+if ($null -eq $CachedConversions[$FinalCurrency]) {
+	Write-Host -Fore Red "Currency conversions for [$FinalCurrency] unable to be found."
+	Exit
 }
 
 # Set up and start stopwatch
@@ -128,12 +173,14 @@ foreach ($log in $logs) {
 			timestamp = [datetimeoffset]::FromUnixTimeMilliseconds($message.timestamp/1000).LocalDateTime
 			USD_Equivalent = 0
 		}
-		$donation["USD_Equivalent"] = $donation.amount * $Conversions[$donation.currency] / $Conversions['USD']
 
 		# Fix non-TLA currency types
 		$donation.currency = $donation.currency -replace "₪","ILS"
 		$donation.currency = $donation.currency -replace "₱","PHP"
 
+		$ConversionFromJPY = $CachedConversions["JPY"][$donation.currency]
+		$ConversionFromJPYtoUSD = $CachedConversions["JPY"]["USD"]
+		$donation["USD_Equivalent"] = $donation.amount / $ConversionFromJPY * $ConversionFromJPYtoUSD
 		
 		if ($donation.timestamp -lt $StartDate -or $donation.timestamp -gt $EndDate) { continue }
 		if ($ShowTopCurrencies) {
@@ -213,13 +260,27 @@ foreach($donator in $donators) {
 		if ($currency -eq $FinalCurrency) {
 			$yen = $donator_stats.money[$currency]
 		} else {
-			$yen = $donator_stats.money[$currency] * $Conversions[$currency]
-			if ($TestConversion -and $donator -eq "Simulanze") {
-				Write-Host ("Convert {0,10:n} {1} -> {2,10:n2} $FinalCurrency`t[{3,8:F3}]" -f 
+			if ($DualConvertMode) {
+				# Dual conversion mode first converts it to JPY (which we always have), then to the destination currency
+				$conversionRateFromJPY = $CachedConversions.JPY."$currency"
+				$conversionRateFromJPYToFinal = $CachedConversions.JPY."$FinalCurrency"
+				if ($null -eq $conversionRateFromJPY) {
+					Write-Host -Fore Red "There's an issue with [$currency]. Treating this as 0 value"
+					$conversionRate = 0
+				} else {
+					$conversionRate = 1 / $conversionRateFromJPY * $conversionRateFromJPYToFinal
+				}
+			} else {
+				$conversionRate = 1 / $CachedConversions."$FinalCurrency"."$currency"
+			}
+			$yen = $donator_stats.money[$currency] * $conversionRate
+			if ($TestConversion -and ($donator -eq "UCfnjcCpARuzFYQtYeX9kr5Q")) {
+				Write-Host ("Convert {0,10:n} {1} -> {2,10:n2} $FinalCurrency`t[{3,8:F3}] {4}" -f
 					$donator_stats.money[$currency],
 					$currency,
 					$yen,
-					$Conversions[$currency] )
+					$conversionRate,
+					$donator )
 			}
 		}
 		$donator_stats["TOTAL"] += [Math]::Round($yen, 3)
