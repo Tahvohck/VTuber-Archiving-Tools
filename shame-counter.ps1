@@ -97,10 +97,13 @@ $StopWatch.Start()
 # Read data files
 try {
 	if ($null -ne $DonationDirectory) {
-		push-location $DonationDirectory -ea Stop
-		Write-Host -Fore Cyan "Reading donations from $DonationDirectory"
-		$logs = get-childItem donations*.json
-		pop-location
+		$logs = @()
+		foreach ($location in $DonationDirectory) {
+			push-location $location -ea Stop
+			Write-Host -Fore Cyan "Reading donations from $location"
+			$logs += get-childItem donations*.json
+			pop-location
+		}
 	} else {
 		Write-Host -Fore Cyan "Reading donations"
 		$logs = get-childItem donations*.json
